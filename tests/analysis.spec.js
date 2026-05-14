@@ -7,6 +7,7 @@ test.beforeEach(async ({ page }) => {
   // Fresh context per test = empty localStorage — no init script needed.
   // (addInitScript would re-fire on page.reload(), wiping persisted state.)
   await page.goto('/meal-analysis.html');
+  await page.waitForFunction(() => window.__appReady === true);
 });
 
 test('page loads with default values surfaced in stats', async ({ page }) => {

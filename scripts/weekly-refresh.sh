@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # weekly-refresh.sh — orchestrates the weekly meal-optimiser data refresh on
-# bumblebee.  Pulls latest, runs every scraper, recomputes the meal-data.js
-# averages, then commits + pushes any changes so the deployed site picks
-# them up.
+# bumblebee.  Pulls latest, runs every scraper, then commits + pushes any
+# changed scraper output JSONs.  The deployed site computes its averages
+# from these JSONs at boot, so no further post-processing is needed.
 #
 # Cron entry (Europe/London, Monday 06:00):
 #   CRON_TZ=Europe/London
@@ -39,16 +39,12 @@ cd scrapers
 python run_all_scrapers.py || log "WARNING: run_all_scrapers.py exited non-zero (continuing — partial data still useful)"
 cd "$REPO"
 
-# ── 4. Recompute meal-data.js averages ---------------------------------------
-log "recomputing meal-data.js averages"
-python dev/headless_recompute.py
-
-# ── 5. Commit + push if anything actually changed ----------------------------
-if git diff --quiet && git diff --cached --quiet; then
-    log "no changes to meal-data.js or scrapers/*.json — nothing to commit"
+# ── 4. Commit + push if any scraper output actually changed ------------------
+if git diff --quiet -- 'scrapers/*_all_products.json' 'scrapers/*_prices.json'; then
+    log "no scraper output changed — nothing to commit"
 else
-    log "committing data refresh"
-    git add meal-data.js 'scrapers/*_all_products.json' 'scrapers/*_prices.json' 2>/dev/null || true
+    log "committing scraped data"
+    git add 'scrapers/*_all_products.json' 'scrapers/*_prices.json' 2>/dev/null || true
     git -c user.email='bumblebee@meal-optimiser.local' \
         -c user.name='bumblebee scraper' \
         commit -m "Weekly data refresh ($(date '+%Y-%m-%d'))"

@@ -9,6 +9,9 @@ test.beforeEach(async ({ page }) => {
   // We don't use addInitScript here — it would clear localStorage on reload too,
   // breaking persistence tests.
   await page.goto('/meal-analysis.html');
+  // Boot is async (fetches scraped product JSONs and applies the averages
+  // before the first render) — wait for the ready signal before asserting.
+  await page.waitForFunction(() => window.__appReady === true);
 });
 
 test('all 24 options load from meal-data.js', async ({ page }) => {

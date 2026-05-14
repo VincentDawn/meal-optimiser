@@ -809,18 +809,114 @@ function resetPerStoreOverrides() {
   updateAll();
 }
 
-// Initialise inputs from stored values
-document.getElementById('netRateInput').value = NET_EMPLOYMENT.toFixed(2);
-document.getElementById('mealsInput').value   = MEALS;
-document.getElementById('instoreInput').value = INSTORE_MINS;
-document.getElementById('onlineInput').value  = ONLINE_MINS;
-document.getElementById('tvSlider').value     = NET_EMPLOYMENT;
+// ── Live aggregation from scraped product files ─────────────────────────────
+// For supermarket/service options that we have a full scraped product list
+// for, we compute the cost/kcal/protein averages in the browser at boot
+// (and again whenever the user's exclusions change in another tab).  This
+// replaces the older flow where a Python script regex-patched meal-data.js.
+//
+// Each entry maps an option id to its scraper output, the localStorage key
+// the corresponding filter page uses for exclusions, and the per-supplier
+// rule for which "price" to take (Tesco prefers Clubcard, M&S prefers the
+// 3-for-£10 deal price, Parsley Box has only one price).
+const SCRAPED_SUPPLIERS = {
+  rm_tesco: {
+    productsUrl: 'scrapers/tesco_all_products.json',
+    productsKey: 'frozen',
+    lsKey: 'excl_tesco',
+    priceFn: p => p.ccPrice ?? p.price,
+  },
+  rm_ms: {
+    productsUrl: 'scrapers/ms_all_products.json',
+    productsKey: null,                 // bare list at JSON root
+    lsKey: 'excl_ms',
+    priceFn: p => p.dealPrice ?? p.ccPrice ?? p.price,
+  },
+  svc_parsley_box: {
+    productsUrl: 'scrapers/parsleybox_all_products.json',
+    productsKey: 'products',
+    lsKey: 'excl_parsleybox',
+    priceFn: p => p.price,
+  },
+};
 
-renderPerStoreTable();
-attachPerStoreHandlers();
+function avg(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null; }
 
-buildCharts();
-updateAll();
+async function aggregate(cfg) {
+  let raw;
+  try {
+    const r = await fetch(cfg.productsUrl, { cache: 'no-store' });
+    if (!r.ok) return null;
+    raw = await r.json();
+  } catch (e) {
+    return null;     // network error or missing file → keep meal-data.js defaults
+  }
+  const products = Array.isArray(raw)
+    ? raw
+    : (cfg.productsKey ? raw[cfg.productsKey] : []) || [];
+
+  let excluded = new Set();
+  try { (JSON.parse(localStorage.getItem(cfg.lsKey) || '[]') || []).forEach(id => excluded.add(id)); } catch (e) {}
+
+  const kept     = products.filter(p => !excluded.has(p.id));
+  const prices   = kept.map(cfg.priceFn).filter(x => typeof x === 'number' && x > 0);
+  const kcals    = kept.map(p => p.kcal).filter(x => typeof x === 'number' && x > 100 && x < 1500);
+  const proteins = kept.map(p => p.protein).filter(x => typeof x === 'number' && x > 1 && x < 100);
+
+  const ap  = avg(prices);
+  const ak  = avg(kcals);
+  const apr = avg(proteins);
+  return {
+    costPerMeal: ap  != null ? +ap.toFixed(2)   : null,
+    calories:    ak  != null ? Math.round(ak)   : null,
+    protein:     apr != null ? +apr.toFixed(1)  : null,
+    keptCount:   kept.length,
+  };
+}
+
+async function applyScrapedAverages() {
+  await Promise.all(Object.entries(SCRAPED_SUPPLIERS).map(async ([id, cfg]) => {
+    const stats = await aggregate(cfg);
+    if (!stats) return;
+    const opt = OPTS.find(o => o.id === id);
+    if (!opt) return;
+    if (stats.costPerMeal != null) opt.costPerMeal = stats.costPerMeal;
+    if (stats.calories    != null) opt.calories    = stats.calories;
+    if (stats.protein     != null) opt.protein     = stats.protein;
+  }));
+}
+
+// ── Boot ────────────────────────────────────────────────────────────────────
+async function init() {
+  document.getElementById('netRateInput').value = NET_EMPLOYMENT.toFixed(2);
+  document.getElementById('mealsInput').value   = MEALS;
+  document.getElementById('instoreInput').value = INSTORE_MINS;
+  document.getElementById('onlineInput').value  = ONLINE_MINS;
+  document.getElementById('tvSlider').value     = NET_EMPLOYMENT;
+
+  renderPerStoreTable();
+  attachPerStoreHandlers();
+
+  // Override scraped-supplier values with live computed averages BEFORE charts
+  // build, so their initial render uses fresh numbers.  If fetches fail (file
+  // missing, offline) we fall back silently to the meal-data.js defaults.
+  await applyScrapedAverages();
+
+  buildCharts();
+  updateAll();
+  window.__appReady = true;     // signal for tests / cross-tab listeners
+}
+init();
+
+// React to filter-page edits in OTHER tabs — the "storage" event fires
+// whenever localStorage is mutated by a different tab.
+window.addEventListener('storage', async (e) => {
+  if (!e.key) return;
+  const lsKeys = Object.values(SCRAPED_SUPPLIERS).map(c => c.lsKey);
+  if (!lsKeys.includes(e.key)) return;
+  await applyScrapedAverages();
+  updateAll();
+});
 
 document.getElementById('tvSlider').addEventListener('input', e => { TIME_VALUE = parseFloat(e.target.value); updateAll(); });
 document.getElementById('cookSlider').addEventListener('input', e => { COOK_MINS = parseInt(e.target.value); updateAll(); });

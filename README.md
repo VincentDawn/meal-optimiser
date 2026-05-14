@@ -9,23 +9,26 @@ The headline question: **at what hourly rate does each option become worthwhile?
 ```
 index.html              Landing page — links to per-supplier filter tools
 meal-analysis.html      Main interactive dashboard (sliders, charts, ranked table)
-meal-data.js            The dataset — single source of truth for the UI
+meal-data.js            Hand-curated option list — defaults, notes, baseline flags
 *-filter.html           Per-supplier exclusion tools (Tesco, M&S, Iceland, Parsley Box)
 scrapers/               Per-supplier scrapers (Python + Playwright JS)
-  *_all_products.json   Scraped product catalogues with prices/macros
+  *_all_products.json   Scraped product catalogues — fetched live by the analysis
+                        page, which computes averages on the fly using your
+                        localStorage exclusions from the filter pages
   README.md             Per-scraper notes and run instructions
-dev/                    Local-only tooling (not part of the deployed site)
-  server.py             Patches meal-data.js after a scrape — see below
+scripts/weekly-refresh.sh  Bumblebee cron orchestrator — scrapes + commits JSON
+.github/workflows/test.yml CI: runs the Playwright suite on push and PR
+tests/                  Playwright specs (calculations, analysis UI, filter pages)
 ```
 
 Plus various `*.png` screenshots from scraping sessions and `meal-prep-services-scotland.md` / `ready-meal-services.md` with research notes.
 
 ## How it works
 
-1. **Scrape** — `scrapers/run_all_scrapers.py` (or individual scripts) hit each supplier's site and dump products to `scrapers/*_all_products.json`.
-2. **Analyse** — `meal-analysis.html` reads `meal-data.js`, lets you slide your hourly time value and active cooking time, and ranks every option by net weekly surplus vs the DIY Farmfoods baseline.
-3. **Filter** (per user) — open `*-filter.html` to tick off products you'd never eat (sandwiches, kids' meals, etc.). Averages recompute live in the browser. Your exclusions persist in localStorage on your device only.
-4. **Curate** (data maintainer) — to update the canonical averages in `meal-data.js`, run `python dev/server.py`, hit each filter page, exclude the same items, and the dev server patches `meal-data.js` in place. Commit + push and the deployed site picks it up.
+1. **Scrape** — `scrapers/run_all_scrapers.py` (or individual scripts) hit each supplier's site and dump products to `scrapers/*_all_products.json`. This runs weekly on bumblebee from cron and commits any changes to the repo.
+2. **Aggregate** — `meal-analysis.html` fetches the three scraped JSONs at boot, applies your exclusions (from localStorage), and computes the average price/calories/protein on the fly. Those overrides land on top of `meal-data.js` *before* charts render.
+3. **Filter** (per user) — open `*-filter.html` to tick off products you'd never eat. Exclusions save to localStorage. Open the analysis tab and the averages reflect your exclusions immediately (and reactively, via the `storage` event, if you have both tabs open).
+4. **Analyse** — slide your hourly time value and active cooking time, configure per-store overrides in the "Per-store settings" table, and watch the rankings shift.
 
 ## Run the deployed site locally
 
@@ -38,16 +41,7 @@ python -m http.server 8000
 
 No build step. Vanilla HTML/JS plus Chart.js from CDN.
 
-## Run the dev curation workflow
-
-```bash
-python dev/server.py
-# open http://localhost:5000
-```
-
-The dev server adds three things on top of static serving: it can read/write `scrapers/exclusions.json`, recompute averages with those exclusions applied, and patch `meal-data.js` in place. Stdlib only — no pip install needed.
-
-The scrapers themselves use `requests`, `beautifulsoup4`, and Playwright — see [scrapers/README.md](scrapers/README.md).
+The scrapers use `beautifulsoup4` and Playwright — see [scrapers/README.md](scrapers/README.md).
 
 ## Tests
 
