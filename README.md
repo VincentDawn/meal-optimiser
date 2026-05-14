@@ -11,10 +11,11 @@ index.html              Landing page — links to per-supplier filter tools
 meal-analysis.html      Main interactive dashboard (sliders, charts, ranked table)
 meal-data.js            The dataset — single source of truth for the UI
 *-filter.html           Per-supplier exclusion tools (Tesco, M&S, Iceland, Parsley Box)
-server.py               Local Python server (static + /api endpoints used by filter pages)
 scrapers/               Per-supplier scrapers (Python + Playwright JS)
   *_all_products.json   Scraped product catalogues with prices/macros
   README.md             Per-scraper notes and run instructions
+dev/                    Local-only tooling (not part of the deployed site)
+  server.py             Patches meal-data.js after a scrape — see below
 ```
 
 Plus various `*.png` screenshots from scraping sessions and `meal-prep-services-scotland.md` / `ready-meal-services.md` with research notes.
@@ -22,14 +23,28 @@ Plus various `*.png` screenshots from scraping sessions and `meal-prep-services-
 ## How it works
 
 1. **Scrape** — `scrapers/run_all_scrapers.py` (or individual scripts) hit each supplier's site and dump products to `scrapers/*_all_products.json`.
-2. **Filter** — open `*-filter.html` in the local server to tick off products you'd never eat (sandwiches, kids' meals, etc.). Hit "Apply to meal-data.js" and the server recomputes averages and writes them back into `meal-data.js`.
-3. **Analyse** — `meal-analysis.html` reads `meal-data.js`, lets you slide your hourly time value and active cooking time, and ranks every option by net weekly surplus vs the DIY Farmfoods baseline.
+2. **Analyse** — `meal-analysis.html` reads `meal-data.js`, lets you slide your hourly time value and active cooking time, and ranks every option by net weekly surplus vs the DIY Farmfoods baseline.
+3. **Filter** (per user) — open `*-filter.html` to tick off products you'd never eat (sandwiches, kids' meals, etc.). Averages recompute live in the browser. Your exclusions persist in localStorage on your device only.
+4. **Curate** (data maintainer) — to update the canonical averages in `meal-data.js`, run `python dev/server.py`, hit each filter page, exclude the same items, and the dev server patches `meal-data.js` in place. Commit + push and the deployed site picks it up.
 
-## Run locally
+## Run the deployed site locally
+
+It's just static files — anything will do:
 
 ```bash
-python server.py
+python -m http.server 8000
+# open http://localhost:8000
+```
+
+No build step. Vanilla HTML/JS plus Chart.js from CDN.
+
+## Run the dev curation workflow
+
+```bash
+python dev/server.py
 # open http://localhost:5000
 ```
 
-No build step — it's vanilla HTML/JS plus Chart.js from CDN. Python is only used by `server.py` and the scrapers (stdlib only for the server; scrapers use `requests`, `beautifulsoup4`, and Playwright).
+The dev server adds three things on top of static serving: it can read/write `scrapers/exclusions.json`, recompute averages with those exclusions applied, and patch `meal-data.js` in place. Stdlib only — no pip install needed.
+
+The scrapers themselves use `requests`, `beautifulsoup4`, and Playwright — see [scrapers/README.md](scrapers/README.md).

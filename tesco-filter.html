@@ -107,9 +107,7 @@
   <input type="text" id="search" placeholder="Filter by name…" oninput="applyFilter()">
   <button onclick="selectAll(false)">Restore all</button>
   <button class="danger" onclick="selectAll(true)">Exclude all visible</button>
-  <button class="apply" onclick="applyToMealData()">Apply to meal-data.js</button>
   <span id="excluded-count"></span>
-  <span id="apply-status"></span>
 </div>
 
 <table id="tbl">
@@ -391,9 +389,8 @@ function showExport() {
   document.getElementById('export-text').value = JSON.stringify([...excluded], null, 2);
 }
 
-// ── Persistence: localStorage + optional server apply ─────────────────────────
+// Exclusions persist in browser localStorage only — your edits are personal.
 const LS_KEY = 'excl_tesco';
-const API = 'http://localhost:5000/api';
 let saveTimer = null;
 
 function loadExclusions() {
@@ -411,32 +408,6 @@ function scheduleSave() {
 
 function saveExclusions() {
   localStorage.setItem(LS_KEY, JSON.stringify([...excluded]));
-}
-
-async function applyToMealData() {
-  const status = document.getElementById('apply-status');
-  status.style.color = '#888';
-  status.textContent = 'Applying…';
-  try {
-    // Sync localStorage exclusions to server before applying
-    let cur = {};
-    try { cur = await (await fetch(`${API}/exclusions`)).json(); } catch(e) {}
-    cur['tesco'] = [...excluded];
-    await fetch(`${API}/exclusions`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cur)});
-    const r = await fetch(`${API}/apply/tesco`, { method: 'POST' });
-    const data = await r.json();
-    if (data.ok) {
-      const s = data.stats;
-      status.style.color = '#2e7d32';
-      status.textContent = `Done! meal-data.js updated: £${s.avg_price}/meal, ${s.avg_kcal} kcal, ${s.avg_protein}g protein (${s.kept} meals kept)`;
-    } else {
-      status.style.color = '#c0392b';
-      status.textContent = `Error: ${data.error}`;
-    }
-  } catch(e) {
-    status.style.color = '#c0392b';
-    status.textContent = 'Could not reach server — is server.py running?';
-  }
 }
 
 // Wrap toggle to also save

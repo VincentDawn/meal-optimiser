@@ -1,6 +1,13 @@
 """
-server.py — local meal prep filter server
-Run: python server.py
+server.py — local-only dev server for curating the meal-data.js dataset.
+
+The deployed site is fully static: filter pages persist exclusions in
+localStorage and recompute averages in the browser. This server exists
+so YOU (data curator) can replay an exclusion list across the canonical
+scraper output and patch the averages back into meal-data.js.
+
+Run from the repo root:
+    python dev/server.py
 Then open: http://localhost:5000
 """
 import json
@@ -10,7 +17,8 @@ from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
 
-BASE = Path(__file__).parent
+# Repo root — server.py lives in dev/, data files live at the root.
+BASE = Path(__file__).resolve().parent.parent
 EXCL_FILE      = BASE / "scrapers" / "exclusions.json"
 MEAL_DATA_FILE = BASE / "meal-data.js"
 

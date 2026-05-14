@@ -87,9 +87,7 @@
   <input type="text" id="search" placeholder="Filter by name…" oninput="applyFilter()">
   <button onclick="selectAll(false)">Restore all</button>
   <button class="danger" onclick="selectAll(true)">Exclude all visible</button>
-  <button class="apply" onclick="applyToMealData()">Apply to meal-data.js</button>
   <span id="excluded-count"></span>
-  <span id="apply-status"></span>
 </div>
 
 <table id="tbl">
@@ -491,28 +489,10 @@ function applyFilter() { searchTerm=document.getElementById('search').value; ren
 function sortBy(k) { currentSort.key===k?currentSort.dir*=-1:(currentSort={key:k,dir:1}); render(); }
 
 const LS_KEY = 'excl_' + KEY;
-const API = 'http://localhost:5000/api';
 let saveTimer = null;
 function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(saveExclusions, 400); }
 function saveExclusions() {
   localStorage.setItem(LS_KEY, JSON.stringify([...excluded]));
-}
-async function applyToMealData() {
-  const s = document.getElementById('apply-status');
-  s.style.color='#888'; s.textContent='Applying…';
-  try {
-    let cur = {};
-    try { cur = await (await fetch(`${API}/exclusions`)).json(); } catch(e) {}
-    cur[KEY] = [...excluded];
-    await fetch(`${API}/exclusions`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cur)});
-    const r = await fetch(`${API}/apply/${KEY}`, {method:'POST'});
-    const d = await r.json();
-    if(d.ok) {
-      const st=d.stats;
-      s.style.color='#2e7d32';
-      s.textContent=`Done! £${st.avg_price}/meal, ${st.avg_kcal} kcal, ${st.avg_protein}g protein (${st.kept} meals)`;
-    } else { s.style.color='#c0392b'; s.textContent=`Error: ${d.error}`; }
-  } catch(e) { s.style.color='#c0392b'; s.textContent='Could not reach server — is server.py running?'; }
 }
 function loadExclusions() {
   try {
