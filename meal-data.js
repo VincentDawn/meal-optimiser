@@ -424,3 +424,50 @@ const MEAL_DATASET = {
 
   ],
 };
+
+/**
+ * Per-option defaults for the "Per-store settings" table. Users can override
+ * any of these from the UI — overrides persist in localStorage and never
+ * touch this file.
+ *
+ *   deliveryFeePerOrder  £ charged per order. 0 if delivery is free.
+ *   deliveryFreeAbove    £ threshold above which delivery becomes free. 0 = no threshold.
+ *   minOrder             £ minimum order amount (warning shown if weekly spend < this).
+ *
+ * Note: drive time is NOT defined here. The "In-store shopping trip time"
+ * global from "Your circumstances" is the default for all in-store options.
+ * Users override per-option from the per-store table when they need to.
+ */
+const OPTION_DEFAULTS = {
+  // ─── DIY (in-store) ──────────────────────────────────────────────────────
+  diy_farmfoods:       { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+  diy_lidl_aldi:       { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+  diy_tesco_asda:      { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+
+  // ─── Meal-deal hybrids (grabbed at work, no trip) ────────────────────────
+  md_sainsburys:       { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+  md_tesco:            { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+
+  // ─── Supermarket ready meals (in-store discounters + online big shops) ───
+  rm_farmfoods:        { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+  rm_farmfoods_small:  { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+  rm_lidl:             { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+  rm_aldi:             { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+  rm_tesco:            { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+  rm_tesco_finest:     { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+  rm_ms:               { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+
+  // ─── Meal delivery services ──────────────────────────────────────────────
+  svc_musclefood_bulk: { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+  svc_parsley_box:     { deliveryFeePerOrder: 5,    deliveryFreeAbove: 50, minOrder: 0  },
+  svc_diced:           { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+  svc_simmer:          { deliveryFeePerOrder: 6.99, deliveryFreeAbove: 0,  minOrder: 0  },
+  svc_wiltshire:       { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+  svc_blueberry_hill:  { deliveryFeePerOrder: 2.50, deliveryFreeAbove: 30, minOrder: 0  },
+  svc_ouiprep:         { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+  svc_cook:            { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+  svc_grate:           { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+  svc_riba:            { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 0  },
+  svc_shaheds:         { deliveryFeePerOrder: 0,    deliveryFreeAbove: 0,  minOrder: 30 },
+  svc_frive:           { deliveryFeePerOrder: 5,    deliveryFreeAbove: 40, minOrder: 0  },
+};
