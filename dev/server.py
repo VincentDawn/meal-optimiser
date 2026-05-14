@@ -125,8 +125,11 @@ def update_meal_data(stats):
     eid = re.escape(entry_id)
 
     def patch(text, field, value, comment):
-        pattern = rf"(id: '{eid}'[\s\S]{{0,800}}?{field}:\s*)[^,/\n]+(.*)"
-        repl    = rf"\g<1>{value},        // VERIFIED — {comment}. Live-scraped {month}\2"
+        # Replace the WHOLE rest of the line (value + any existing comment).
+        # Earlier version captured the trailing comment and re-emitted it,
+        # which caused stacked comments on every patch.
+        pattern = rf"(id: '{eid}'[\s\S]{{0,800}}?{field}:\s*)[^\n]+"
+        repl    = rf"\g<1>{value},  // VERIFIED — {comment}. Live-scraped {month}"
         return re.sub(pattern, repl, text)
 
     content = patch(content, "costPerMeal", ap,  f"avg across {n} products ({exc} excluded)")
