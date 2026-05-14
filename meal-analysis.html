@@ -65,7 +65,19 @@
 <body>
 
 <h1>Meal Strategy — Interactive Analysis</h1>
-<p class="sub">Loaded from meal-data.js · Edit that file to update costs, macros & options · 21 meals/week · £60k Scotland salary</p>
+<p class="sub">Loaded from meal-data.js · Edit that file to update costs, macros & options · 21 meals/week</p>
+
+<!-- PERSONAL RATE SETUP -->
+<div class="slider-section" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+  <label for="netRateInput" style="font-size:0.82rem;color:#8b949e">Your hourly net rate (after tax)</label>
+  <div style="display:flex;align-items:center;gap:6px">
+    <span style="font-size:1.4rem;color:#fff;font-weight:700">£</span>
+    <input type="number" id="netRateInput" min="1" max="200" step="0.01" value="17.23"
+           style="width:90px;font-size:1.4rem;font-weight:700;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#fff;padding:4px 8px;text-align:right">
+    <span style="font-size:0.82rem;color:#6e7681">/ hr</span>
+  </div>
+  <span style="font-size:0.72rem;color:#6e7681">Saved in your browser. Used as your reference for break-even comparisons.</span>
+</div>
 
 <!-- SLIDERS -->
 <div class="slider-section">
@@ -76,7 +88,7 @@
       <div class="slider-val" id="tvDisplay">£17.23<small>/ hr net</small></div>
       <input type="range" id="tvSlider" min="5" max="60" step="0.5" value="17.23">
       <div class="tick-row"><span>£5</span><span>£20</span><span>£35</span><span>£50</span><span>£60</span></div>
-      <div class="ref-line" id="tvRef">▲ Matches your employment net rate (£17.23/hr)</div>
+      <div class="ref-line" id="tvRef">▲ Matches your hourly net rate (£17.23/hr)</div>
     </div>
     <div class="slider-group">
       <label>DIY active cooking time per meal</label>
@@ -90,7 +102,7 @@
 
 <!-- STATS -->
 <div class="stats">
-  <div class="stat"><div class="stat-label">Employment Net Rate</div><div class="stat-val">£17.23/hr</div></div>
+  <div class="stat"><div class="stat-label">Your Net Rate</div><div class="stat-val" id="sNetRate">£17.23/hr</div></div>
   <div class="stat blue"><div class="stat-label">Selected Time Value</div><div class="stat-val" id="sTV">£17.23/hr</div></div>
   <div class="stat"><div class="stat-label">DIY Active Time/wk</div><div class="stat-val" id="sDIY">2.80 hrs</div></div>
   <div class="stat"><div class="stat-label">Ready Meal Active/wk</div><div class="stat-val">0.18 hrs</div></div>
@@ -162,10 +174,12 @@ const META  = MEAL_DATASET.meta;
 const OPTS  = MEAL_DATASET.options;
 const MEALS = META.meals_per_week;
 const HEAT  = META.heat_active_secs / 3600;  // hours
-const NET_EMPLOYMENT = 17.23;
+const RATE_LS_KEY = 'meal_optimiser_net_rate';
+const RATE_DEFAULT = 17.23;
+let NET_EMPLOYMENT = parseFloat(localStorage.getItem(RATE_LS_KEY)) || RATE_DEFAULT;
 const KEEP = 0.56;
 
-let TIME_VALUE = 17.23;
+let TIME_VALUE = NET_EMPLOYMENT;
 let COOK_MINS  = 8;
 
 const CAT_COLOR = {
@@ -416,8 +430,9 @@ function updateAll() {
   document.getElementById('cookDisplay').innerHTML = `${COOK_MINS}<small>min active</small>`;
   const ratio = TIME_VALUE / NET_EMPLOYMENT;
   document.getElementById('tvRef').textContent = Math.abs(ratio-1) < 0.03
-    ? '▲ Matches your employment net rate (£17.23/hr)'
-    : `▲ Your employment net rate is £17.23/hr — you're at ${ratio.toFixed(1)}×`;
+    ? `▲ Matches your hourly net rate (£${NET_EMPLOYMENT.toFixed(2)}/hr)`
+    : `▲ Your hourly net rate is £${NET_EMPLOYMENT.toFixed(2)}/hr — you're at ${ratio.toFixed(1)}×`;
+  document.getElementById('sNetRate').textContent = `£${NET_EMPLOYMENT.toFixed(2)}/hr`;
   document.getElementById('cookRef').textContent = `21 × ${COOK_MINS} min = ${diy.toFixed(2)} hrs/wk active cooking`;
 
   // Top 3
@@ -510,10 +525,25 @@ function updateAll() {
   });
 }
 
+// Initialise UI from stored rate
+document.getElementById('netRateInput').value = NET_EMPLOYMENT.toFixed(2);
+document.getElementById('tvSlider').value = NET_EMPLOYMENT;
+
 buildCharts();
 updateAll();
+
 document.getElementById('tvSlider').addEventListener('input', e => { TIME_VALUE = parseFloat(e.target.value); updateAll(); });
 document.getElementById('cookSlider').addEventListener('input', e => { COOK_MINS = parseInt(e.target.value); updateAll(); });
+document.getElementById('netRateInput').addEventListener('change', e => {
+  const v = parseFloat(e.target.value);
+  if (!v || v <= 0) return;
+  NET_EMPLOYMENT = v;
+  localStorage.setItem(RATE_LS_KEY, v);
+  // Snap the slider/explorer to the new rate so the chart reference matches
+  TIME_VALUE = v;
+  document.getElementById('tvSlider').value = v;
+  updateAll();
+});
 </script>
 </body>
 </html>
