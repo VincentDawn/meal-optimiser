@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Parsley Box — Filter</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; font-size: 14px; background: #f5f5f5; color: #222; }
+  h1 { padding: 16px 20px 8px; font-size: 18px; }
+  #stats {
+    position: sticky; top: 0; z-index: 10;
+    background: #7b4f1e; color: #fff;
+    display: flex; flex-wrap: wrap; gap: 20px;
+    padding: 10px 20px; align-items: center;
+  }
+  #stats .stat { text-align: center; }
+  #stats .stat .val { font-size: 22px; font-weight: 700; }
+  #stats .stat .lbl { font-size: 11px; opacity: 0.8; }
+  #stats .sep { width: 1px; background: rgba(255,255,255,0.3); align-self: stretch; }
+  #controls {
+    padding: 10px 20px; background: #fff; border-bottom: 1px solid #ddd;
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  #controls input[type=text] {
+    border: 1px solid #ccc; border-radius: 4px; padding: 5px 10px;
+    font-size: 13px; width: 280px;
+  }
+  button { background: #7b4f1e; color: #fff; border: none; border-radius: 4px; padding: 5px 12px; cursor: pointer; font-size: 13px; }
+  button:hover { background: #9a6428; }
+  button.danger { background: #c0392b; }
+  button.danger:hover { background: #e74c3c; }
+  button.apply { background: #8b5a21; }
+  #excluded-count { font-size: 13px; color: #888; }
+  #apply-status { font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #eee; border-bottom: 2px solid #ccc; padding: 7px 10px; text-align: left; cursor: pointer; white-space: nowrap; position: sticky; top: 57px; z-index: 5; }
+  th:hover { background: #ddd; }
+  td { padding: 6px 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  tr.excluded { opacity: 0.35; }
+  tr.excluded td { text-decoration: line-through; }
+  tr:hover td { background: #fdf6ee; }
+  td.name { max-width: 340px; }
+  td.name a { color: inherit; text-decoration: none; }
+  td.name a:hover { text-decoration: underline; color: #7b4f1e; }
+  td.price, td.kcal, td.protein { text-align: right; width: 90px; }
+  td.excl { text-align: center; width: 40px; }
+  input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: #c0392b; }
+  .null { color: #bbb; font-style: italic; }
+  .ambient { font-size: 11px; color: #7b4f1e; font-weight: 600; }
+
+  /* dark mode */
+  body { background: #121212; color: #e8e8e8; }
+  h1 { color: #e8e8e8; }
+  #controls { background: #1e1e1e; border-bottom-color: #333; }
+  #controls input[type=text] { background: #252525; border-color: #444; color: #e8e8e8; }
+  #controls input[type=number] { background: #252525; border-color: #444; color: #e8e8e8; }
+  #controls select { background: #252525; border-color: #444; color: #e8e8e8; }
+  #controls label { color: #ccc; }
+  #excluded-count { color: #888; }
+  th { background: #252525; border-bottom-color: #444; color: #e8e8e8; }
+  th:hover { background: #2f2f2f; }
+  td { border-bottom-color: #2a2a2a; color: #e8e8e8; }
+  tr:hover td { background: #252525 !important; }
+  tr.excluded td { color: #555; }
+  .null { color: #555; }
+  table { background: #121212; }
+</style>
+</head>
+<body>
+
+<div style="padding:10px 20px 0;"><a href="index.html" style="font-size:13px;color:#7b4f1e;text-decoration:none;">← All providers</a></div>
+<h1>Parsley Box — Filter Tool</h1>
+
+<div id="stats">
+  <div class="stat"><div class="val" id="s-count">—</div><div class="lbl">meals kept</div></div>
+  <div class="sep"></div>
+  <div class="stat"><div class="val" id="s-price">—</div><div class="lbl">avg price</div></div>
+  <div class="sep"></div>
+  <div class="stat"><div class="val" id="s-kcal">—</div><div class="lbl">avg kcal</div></div>
+  <div class="sep"></div>
+  <div class="stat"><div class="val" id="s-protein">—</div><div class="lbl">avg protein</div></div>
+  <div class="sep"></div>
+  <div class="stat"><div class="val" id="s-cpp">—</div><div class="lbl">£/g protein</div></div>
+</div>
+
+<div id="controls">
+  <input type="text" id="search" placeholder="Filter by name…" oninput="applyFilter()">
+  <button onclick="selectAll(false)">Restore all</button>
+  <button class="danger" onclick="selectAll(true)">Exclude all visible</button>
+  <button class="apply" onclick="applyToMealData()">Apply to meal-data.js</button>
+  <span id="excluded-count"></span>
+  <span id="apply-status"></span>
+</div>
+
+<table id="tbl">
+  <thead>
+    <tr>
+      <th class="excl">✕</th>
+      <th onclick="sortBy('name')">Name</th>
+      <th onclick="sortBy('size')">Size</th>
+      <th onclick="sortBy('price')">Price</th>
+      <th onclick="sortBy('kcal')">Kcal</th>
+      <th onclick="sortBy('protein')">Protein</th>
+      <th onclick="sortBy('ppp')">£/protein g</th>
+      <th onclick="sortBy('pkc')">p/kcal</th>
+      <th onclick="sortBy('score')">Score</th>
+    </tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+</table>
+
+<script>
+const KEY = 'parsleybox';
+const products = [
+  {"id":"pb_chicken_king","name":"Chicken a la King with Rice","price":4.49,"size":"350g","kcal":375,"protein":17.5,"slug":"chicken-a-la-king-with-rice"},
+  {"id":"pb_sweet_sour","name":"Sweet & Sour Chicken with Rice","price":4.49,"size":"350g","kcal":467,"protein":18.6,"slug":"sweet-and-sour-chicken-with-rice"},
+  {"id":"pb_chasseur","name":"Chicken Chasseur with Rice","price":4.49,"size":"350g","kcal":392,"protein":27.1,"slug":"chicken-chasseur-with-rice"},
+  {"id":"pb_thai_ginger","name":"Thai Style Ginger & Lemon Chicken with Rice","price":4.49,"size":"350g","kcal":454,"protein":22.6,"slug":"thai-style-ginger-and-lemon-chicken-with-rice"},
+  {"id":"pb_korma","name":"Chicken Korma with Rice","price":4.49,"size":"350g","kcal":697,"protein":24.3,"slug":"chicken-korma-with-rice"},
+  {"id":"pb_tikka","name":"Chicken Tikka Masala with Rice","price":4.49,"size":"350g","kcal":627,"protein":29.3,"slug":"chicken-tikka-masala-with-rice"},
+  {"id":"pb_coq_au_vin","name":"Coq au Vin with Mashed Potatoes","price":4.49,"size":"375g","kcal":389,"protein":27.6,"slug":"coq-au-vin-with-mashed-potatoes"},
+  {"id":"pb_spanish","name":"Spanish Style Chicken with Rice","price":4.49,"size":"350g","kcal":357,"protein":19.6,"slug":"spanish-style-chicken-with-rice"}
+];
+
+let excluded = new Set();
+let currentSort = {key: 'score', dir: -1};
+let searchTerm = '';
+
+function pbUrl(p) {
+  return `https://www.parsleybox.com/meals/${p.slug}`;
+}
+
+function fmt(v, d=1) { return v==null ? '<span class="null">—</span>' : v.toFixed(d); }
+
+function render() {
+  const term = searchTerm.toLowerCase();
+  const rows = products
+    .filter(p => !term || p.name.toLowerCase().includes(term))
+    .map(p => ({...p, ppp: p.price && p.protein ? p.price/p.protein : null, pkc: p.price && p.kcal ? p.price*100/p.kcal : null, score: p.price && p.kcal && p.protein ? (p.protein*p.protein*4)/(p.price*p.kcal) : null}))
+    .sort((a,b) => {
+      let av=a[currentSort.key], bv=b[currentSort.key];
+      if(av==null&&bv==null) return 0; if(av==null) return 1; if(bv==null) return -1;
+      if(typeof av==='string') return av.localeCompare(bv)*currentSort.dir;
+      return (av-bv)*currentSort.dir;
+    });
+
+  document.getElementById('tbody').innerHTML = rows.map(p => {
+    const ex = excluded.has(p.id);
+    const url = pbUrl(p);
+    const nameCell = `<a href="${url}" target="_blank" rel="noopener">${p.name}</a>`;
+    return `<tr class="${ex?'excluded':''}" data-id="${p.id}">
+      <td class="excl"><input type="checkbox" ${ex?'checked':''} onchange="toggle('${p.id}')"></td>
+      <td class="name">${nameCell}<br><span class="ambient">Ambient — no freezer needed</span></td>
+      <td>${p.size||'—'}</td>
+      <td class="price">£${p.price.toFixed(2)}</td>
+      <td class="kcal">${fmt(p.kcal,0)}</td>
+      <td class="protein">${fmt(p.protein,1)}<small>g</small></td>
+      <td class="protein">${p.ppp!=null?'£'+fmt(p.ppp,3):'<span class="null">—</span>'}</td>
+      <td class="protein">${p.pkc!=null?fmt(p.pkc,2)+'p':'<span class="null">—</span>'}</td>
+      <td class="protein" style="font-weight:${p.score>3?'700':'400'};color:${p.score>3?'#2e7d32':p.score>1.5?'inherit':'#aaa'}">${p.score!=null?fmt(p.score,2):'<span class="null">—</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  updateStats();
+  document.getElementById('excluded-count').textContent = excluded.size ? `${excluded.size} excluded` : '';
+}
+
+function updateStats() {
+  const kept = products.filter(p => !excluded.has(p.id));
+  const prices   = kept.map(p => p.price).filter(x=>x);
+  const kcals    = kept.map(p => p.kcal).filter(x=>x&&x>100);
+  const proteins = kept.map(p => p.protein).filter(x=>x&&x>1&&x<100);
+  const ppps     = kept.filter(p=>p.price&&p.protein&&p.protein<100).map(p=>p.price/p.protein);
+  const avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : null;
+  const ap=avg(prices), ak=avg(kcals), apr=avg(proteins), appp=avg(ppps);
+  document.getElementById('s-count').textContent = kept.length;
+  document.getElementById('s-price').textContent = ap ? '£'+ap.toFixed(2) : '—';
+  document.getElementById('s-kcal').textContent = ak ? Math.round(ak) : '—';
+  document.getElementById('s-protein').textContent = apr ? apr.toFixed(1)+'g' : '—';
+  document.getElementById('s-cpp').textContent = appp ? '£'+appp.toFixed(3) : '—';
+}
+
+function toggle(id) { excluded.has(id)?excluded.delete(id):excluded.add(id); render(); scheduleSave(); }
+function selectAll(ex) {
+  const t=searchTerm.toLowerCase();
+  products.filter(p=>!t||p.name.toLowerCase().includes(t)).forEach(p=>ex?excluded.add(p.id):excluded.delete(p.id));
+  render(); scheduleSave();
+}
+function applyFilter() { searchTerm=document.getElementById('search').value; render(); }
+function sortBy(k) { currentSort.key===k?currentSort.dir*=-1:(currentSort={key:k,dir:1}); render(); }
+
+const LS_KEY = 'excl_' + KEY;
+const API = 'http://localhost:5000/api';
+let saveTimer = null;
+function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(saveExclusions, 400); }
+function saveExclusions() {
+  localStorage.setItem(LS_KEY, JSON.stringify([...excluded]));
+}
+async function applyToMealData() {
+  const s = document.getElementById('apply-status');
+  s.style.color='#888'; s.textContent='Applying…';
+  try {
+    let cur = {};
+    try { cur = await (await fetch(`${API}/exclusions`)).json(); } catch(e) {}
+    cur[KEY] = [...excluded];
+    await fetch(`${API}/exclusions`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cur)});
+    const r = await fetch(`${API}/apply/${KEY}`, {method:'POST'});
+    const d = await r.json();
+    if(d.ok) {
+      const st=d.stats;
+      s.style.color='#7b4f1e';
+      s.textContent=`Done! £${st.avg_price}/meal, ${st.avg_kcal} kcal, ${st.avg_protein}g protein (${st.kept} meals)`;
+    } else { s.style.color='#c0392b'; s.textContent=`Error: ${d.error}`; }
+  } catch(e) { s.style.color='#c0392b'; s.textContent='Could not reach server — is server.py running?'; }
+}
+function loadExclusions() {
+  try {
+    JSON.parse(localStorage.getItem(LS_KEY) || '[]').forEach(id=>excluded.add(id));
+  } catch(e) {}
+  render();
+}
+loadExclusions();
+</script>
+</body>
+</html>

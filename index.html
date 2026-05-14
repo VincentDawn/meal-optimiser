@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Meal Prep Comparison</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #222; padding: 40px 20px; }
+  h1 { font-size: 22px; margin-bottom: 6px; }
+  p.sub { color: #666; font-size: 14px; margin-bottom: 32px; }
+
+  .grid { display: flex; flex-wrap: wrap; gap: 16px; max-width: 860px; }
+
+  .card {
+    background: #fff; border-radius: 8px; border: 1px solid #ddd;
+    padding: 20px; width: 260px; text-decoration: none; color: inherit;
+    display: flex; flex-direction: column; gap: 6px;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+  .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); border-color: #1a3a5c; }
+  .card .label { font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #888; }
+  .card .name { font-size: 17px; font-weight: 700; }
+  .card .stats { font-size: 13px; color: #555; margin-top: 4px; }
+  .card .stats span { display: inline-block; margin-right: 12px; }
+  .card .tag {
+    display: inline-block; font-size: 11px; padding: 2px 7px;
+    border-radius: 10px; margin-top: 4px; font-weight: 600;
+  }
+  .tag.supermarket { background: #e8f0fe; color: #1a3a8c; }
+  .tag.service { background: #e8f5e9; color: #1a6a2c; }
+  .tag.soon { background: #fff3e0; color: #a05000; }
+
+  .card.disabled { opacity: 0.5; pointer-events: none; cursor: default; }
+  .card.disabled .name::after { content: ' — coming soon'; font-size: 13px; font-weight: 400; color: #aaa; }
+
+  /* dark mode */
+  body { background: #121212; color: #e8e8e8; }
+  p.sub { color: #999; }
+  .card { background: #1e1e1e; border-color: #333; color: #e8e8e8; }
+  .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.4); border-color: #6699cc; }
+  .card .label { color: #777; }
+  .card .stats { color: #aaa; }
+  .tag.supermarket { background: #1a2a4a; color: #7aaaee; }
+  .tag.service { background: #1a3a1a; color: #7acc7a; }
+  .tag.soon { background: #3a2a0a; color: #ccaa44; }
+</style>
+</head>
+<body>
+
+<h1>Meal Prep — Filter Tools</h1>
+<p class="sub">Click a provider to filter their products and see live averages.</p>
+
+<div class="grid">
+
+  <a class="card" href="tesco-filter.html">
+    <span class="label">Supermarket</span>
+    <span class="name">Tesco Frozen</span>
+    <div class="stats">
+      <span>147 products</span>
+      <span>£0.99 – £5.00</span>
+    </div>
+    <div class="stats">
+      <span>avg £2.59/meal</span>
+      <span>404 kcal · 20g protein</span>
+    </div>
+    <span class="tag supermarket">Supermarket</span>
+  </a>
+
+  <a class="card" href="ms-filter.html">
+    <span class="label">Supermarket</span>
+    <span class="name">M&amp;S (Ocado)</span>
+    <div class="stats">
+      <span>302 products</span>
+      <span>£2.75 – £7.00</span>
+    </div>
+    <div class="stats">
+      <span>18 with 3-for-£10 deal</span>
+    </div>
+    <span class="tag supermarket">Supermarket</span>
+  </a>
+
+  <a class="card" href="iceland-filter.html">
+    <span class="label">Supermarket</span>
+    <span class="name">Iceland</span>
+    <div class="stats">
+      <span>237 products</span>
+      <span>£0.75 – £6.00</span>
+    </div>
+    <div class="stats">
+      <span>Free delivery over £35</span>
+    </div>
+    <span class="tag supermarket">Supermarket</span>
+  </a>
+
+  <a class="card" href="parsleybox-filter.html">
+    <span class="label">Delivery service</span>
+    <span class="name">Parsley Box</span>
+    <div class="stats">
+      <span>8 products · ambient</span>
+      <span>avg £4.49/meal</span>
+    </div>
+    <div class="stats">
+      <span>470 kcal · 23g protein</span>
+    </div>
+    <span class="tag service">Delivery service</span>
+  </a>
+
+</div>
+
+</body>
+</html>

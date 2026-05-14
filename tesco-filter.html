@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tesco Frozen Meals — Filter &amp; Averages</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; font-size: 14px; background: #f5f5f5; color: #222; }
+  h1 { padding: 16px 20px 8px; font-size: 18px; }
+  #stats {
+    position: sticky; top: 0; z-index: 10;
+    background: #1a3a5c; color: #fff;
+    display: flex; flex-wrap: wrap; gap: 20px;
+    padding: 10px 20px; align-items: center;
+  }
+  #stats .stat { text-align: center; }
+  #stats .stat .val { font-size: 22px; font-weight: 700; }
+  #stats .stat .lbl { font-size: 11px; opacity: 0.8; }
+  #stats .sep { width: 1px; background: rgba(255,255,255,0.3); align-self: stretch; }
+  #controls {
+    padding: 10px 20px; background: #fff; border-bottom: 1px solid #ddd;
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  #controls input[type=text] {
+    border: 1px solid #ccc; border-radius: 4px; padding: 5px 10px;
+    font-size: 13px; width: 280px;
+  }
+  button {
+    background: #1a3a5c; color: #fff; border: none; border-radius: 4px;
+    padding: 5px 12px; cursor: pointer; font-size: 13px;
+  }
+  button:hover { background: #255080; }
+  button.danger { background: #c0392b; }
+  button.danger:hover { background: #e74c3c; }
+  button.secondary { background: #666; }
+  button.apply { background: #2e7d32; }
+  button.apply:hover { background: #388e3c; }
+  #excluded-count { font-size: 13px; color: #888; }
+  #apply-status { font-size: 13px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    background: #eee; border-bottom: 2px solid #ccc;
+    padding: 7px 10px; text-align: left; cursor: pointer;
+    white-space: nowrap; position: sticky; top: 57px; z-index: 5;
+  }
+  th:hover { background: #ddd; }
+  th .sort-arrow { margin-left: 4px; opacity: 0.4; }
+  th.sorted .sort-arrow { opacity: 1; }
+  td { padding: 6px 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  tr.excluded { opacity: 0.35; }
+  tr.excluded td { text-decoration: line-through; }
+  tr:hover td { background: #f0f7ff; }
+  tr.excluded:hover td { background: #fff0f0; }
+  td.name { max-width: 340px; }
+  td.price, td.kcal, td.protein { text-align: right; width: 80px; }
+  td.excl { text-align: center; width: 40px; }
+  input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: #c0392b; }
+  .null { color: #bbb; font-style: italic; }
+
+  td.name a { color: inherit; text-decoration: none; }
+  td.name a:hover { text-decoration: underline; color: #1a3a5c; }
+  .finest { border-left: 3px solid #b8860b; }
+  .finest td.name::before { content: '★ '; color: #b8860b; font-size: 11px; }
+
+  #export-area {
+    display: none; padding: 12px 20px; background: #fff3cd; border-top: 1px solid #ffc107;
+  }
+  #export-area textarea { width: 100%; height: 80px; font-family: monospace; font-size: 12px; }
+
+  /* dark mode */
+  body { background: #121212; color: #e8e8e8; }
+  h1 { color: #e8e8e8; }
+  #controls { background: #1e1e1e; border-bottom-color: #333; }
+  #controls input[type=text] { background: #252525; border-color: #444; color: #e8e8e8; }
+  #controls input[type=number] { background: #252525; border-color: #444; color: #e8e8e8; }
+  #controls select { background: #252525; border-color: #444; color: #e8e8e8; }
+  #controls label { color: #ccc; }
+  #excluded-count { color: #888; }
+  th { background: #252525; border-bottom-color: #444; color: #e8e8e8; }
+  th:hover { background: #2f2f2f; }
+  td { border-bottom-color: #2a2a2a; color: #e8e8e8; }
+  tr:hover td { background: #252525 !important; }
+  tr.excluded td { color: #555; }
+  .null { color: #555; }
+  table { background: #121212; }
+</style>
+</head>
+<body>
+
+<div style="padding:10px 20px 0;"><a href="index.html" style="font-size:13px;color:#1a3a5c;text-decoration:none;">← All providers</a></div>
+<h1>Tesco Frozen Ready Meals — Filter Tool</h1>
+
+<div id="stats">
+  <div class="stat"><div class="val" id="s-count">—</div><div class="lbl">meals kept</div></div>
+  <div class="sep"></div>
+  <div class="stat"><div class="val" id="s-price">—</div><div class="lbl">avg price</div></div>
+  <div class="sep"></div>
+  <div class="stat"><div class="val" id="s-kcal">—</div><div class="lbl">avg kcal</div></div>
+  <div class="sep"></div>
+  <div class="stat"><div class="val" id="s-protein">—</div><div class="lbl">avg protein</div></div>
+  <div class="sep"></div>
+  <div class="stat"><div class="val" id="s-cpp">—</div><div class="lbl">p/£ per protein gram</div></div>
+</div>
+
+<div id="controls">
+  <input type="text" id="search" placeholder="Filter by name…" oninput="applyFilter()">
+  <button onclick="selectAll(false)">Restore all</button>
+  <button class="danger" onclick="selectAll(true)">Exclude all visible</button>
+  <button class="apply" onclick="applyToMealData()">Apply to meal-data.js</button>
+  <span id="excluded-count"></span>
+  <span id="apply-status"></span>
+</div>
+
+<table id="tbl">
+  <thead>
+    <tr>
+      <th class="excl" title="Check to exclude">✕</th>
+      <th onclick="sortBy('name')">Name <span class="sort-arrow">↕</span></th>
+      <th onclick="sortBy('price')">Price <span class="sort-arrow">↕</span></th>
+      <th onclick="sortBy('kcal')">Kcal <span class="sort-arrow">↕</span></th>
+      <th onclick="sortBy('protein')">Protein <span class="sort-arrow">↕</span></th>
+      <th onclick="sortBy('ppp')">p/protein £ <span class="sort-arrow">↕</span></th>
+      <th onclick="sortBy('pkc')">p/kcal <span class="sort-arrow">↕</span></th>
+      <th onclick="sortBy('score')">Score <span class="sort-arrow">↕</span></th>
+    </tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+</table>
+
+
+<script>
+const products = [
+    {"id": "299596850", "name": "Hearty Food Co. Spaghetti Bolognese 400G", "price": 0.99, "ccPrice": null, "kcal": 377, "protein": 19.1},
+    {"id": "299640124", "name": "Hearty Food Co. Toad In The Hole 300G", "price": 0.99, "ccPrice": null, "kcal": 499, "protein": 21.2},
+    {"id": "299555755", "name": "Hearty Food Co Mac 'N' Cheese 400G", "price": 0.99, "ccPrice": null, "kcal": 485, "protein": 17.4},
+    {"id": "299555732", "name": "Hearty Food Co Cheese & Tomato Pasta 400G", "price": 0.99, "ccPrice": null, "kcal": 486, "protein": 17.3},
+    {"id": "299596717", "name": "Hearty Food Co. Chicken Curry With Rice 400G", "price": 0.99, "ccPrice": null, "kcal": 474, "protein": 21.0},
+    {"id": "282049626", "name": "Mr. Brain's 6 Pork Faggots 656G", "price": 1.25, "ccPrice": null, "kcal": 570, "protein": 39.0},
+    {"id": "311954991", "name": "Chicago Town Deep Dish Four Cheese Pizzas 2 X 148G", "price": 1.55, "ccPrice": null, "kcal": 414, "protein": 17.0},
+    {"id": "311783357", "name": "Chicago Town Deep Dish Pepperoni Pizzas 2 X 155G", "price": 1.55, "ccPrice": null, "kcal": 426, "protein": 16.0},
+    {"id": "322067002", "name": "Tesco 2 Chicken & Bacon Pies 284g", "price": 1.55, "ccPrice": 1.25, "kcal": 316, "protein": 11.1, "deal": "Any 2 for £2.5"},
+    {"id": "312111962", "name": "Chicago Town Deep Dish Mega Meaty Pizzas 2 X 157G", "price": 1.55, "ccPrice": null, "kcal": 426, "protein": 17.0},
+    {"id": "321841545", "name": "Tesco Tarka Dhal & Bombay Potato Duo 400g", "price": 1.65, "ccPrice": null, "kcal": 308, "protein": 9.8},
+    {"id": "321955214", "name": "Street Snacks Beef Pasta Ragu 300g", "price": 2.5, "ccPrice": 1.75, "kcal": 527, "protein": 23.6},
+    {"id": "321682317", "name": "Street Snacks Classic Mac & Cheese 300g", "price": 2.5, "ccPrice": 1.75, "kcal": 587, "protein": 32.0},
+    {"id": "321945186", "name": "Street Snacks Chicken Jalfrezi & Rice 300g", "price": 2.5, "ccPrice": 1.75, "kcal": 388, "protein": 20.0},
+    {"id": "321960680", "name": "Street Snacks Chicken Tikka Potatoes 300g", "price": 2.5, "ccPrice": 1.75, "kcal": 449, "protein": 17.0},
+    {"id": "320795975", "name": "Tesco 2 Long Ferment Pizza Pockets", "price": 1.75, "ccPrice": null, "kcal": 338, "protein": 10.0},
+    {"id": "321960478", "name": "Street Snacks Chicken Korma Potatoes 300g", "price": 2.5, "ccPrice": 1.75, "kcal": 480, "protein": 16.4},
+    {"id": "256015268", "name": "Aunt Bessie's Toad In The Hole 190G", "price": 1.8, "ccPrice": null, "kcal": 382, "protein": 13.0},
+    {"id": "317981925", "name": "Tesco High Protein Beef & Lentil Ragu 400g", "price": 2.25, "ccPrice": 1.95, "kcal": 408, "protein": 25.5},
+    {"id": "321547951", "name": "Hearty Food Co. 4 Chicken & Veg Pies 568g", "price": 1.95, "ccPrice": null, "kcal": 1120, "protein": 43.2},
+    {"id": "318181937", "name": "Tesco High Protein Chilli Chicken 400g", "price": 2.25, "ccPrice": 1.95, "kcal": 312, "protein": 22.8},
+    {"id": "318257405", "name": "Tesco High Protein Beef & Broccoli Stroganoff 400g", "price": 2.25, "ccPrice": 1.95, "kcal": null, "protein": null},
+    {"id": "318176748", "name": "Tesco High Protein Tandoori Chicken Masala 400g", "price": 2.25, "ccPrice": 1.95, "kcal": 366, "protein": 21.1},
+    {"id": "318272755", "name": "Tesco High Protein 3 Bean Chipotle Chilli 400g", "price": 2.25, "ccPrice": 1.95, "kcal": 359, "protein": 19.2},
+    {"id": "321545285", "name": "Tesco Firecracker Chicken & Jasmine Rice 400g", "price": 2.0, "ccPrice": null, "kcal": 519, "protein": 21.6},
+    {"id": "314948297", "name": "Tesco South Indian Style Butternut and Chickpea Curry 400g", "price": 2.0, "ccPrice": null, "kcal": 587, "protein": 14.0},
+    {"id": "289839049", "name": "Tesco Vegetarian Vegetable Lasagne 375G", "price": 2.0, "ccPrice": null, "kcal": 321, "protein": 12.7},
+    {"id": "321835610", "name": "Tesco Tomato & Pancetta Spaghetti 400g", "price": 2.0, "ccPrice": null, "kcal": 419, "protein": 17.3},
+    {"id": "317534617", "name": "Tesco Spicy Fajita Chicken with Rice 400g", "price": 2.0, "ccPrice": null, "kcal": 403, "protein": 21.3},
+    {"id": "314690491", "name": "Tesco Macaroni Cheese 400g", "price": 2.0, "ccPrice": null, "kcal": 656, "protein": 30.4},
+    {"id": "303182182", "name": "Tesco Chicken Hotpot 400G", "price": 2.0, "ccPrice": null, "kcal": 355, "protein": 19.8},
+    {"id": "303182209", "name": "Tesco Sausage And Mash 400G", "price": 2.0, "ccPrice": null, "kcal": 468, "protein": 20.0},
+    {"id": "314936639", "name": "Tesco Mushroom Stroganoff 400g", "price": 2.0, "ccPrice": null, "kcal": 392, "protein": 9.2},
+    {"id": "321848595", "name": "Tesco Honey, Soy & Ginger Chicken with Jasmine Rice 400g", "price": 2.0, "ccPrice": null, "kcal": 540, "protein": 19.5},
+    {"id": "303182320", "name": "Tesco Spaghetti Bolognese With Cheese Crumbs 400G", "price": 2.0, "ccPrice": null, "kcal": 385, "protein": 21.4},
+    {"id": "303182147", "name": "Tesco Shepherds Pie 400G", "price": 2.0, "ccPrice": null, "kcal": 358, "protein": 16.5},
+    {"id": "314834950", "name": "Tesco Chili Beef Noodles 400g", "price": 2.0, "ccPrice": null, "kcal": 548, "protein": 19.0},
+    {"id": "321946277", "name": "Tesco Chicken & Mushroom Tagliatelle 400g", "price": 2.0, "ccPrice": null, "kcal": 505, "protein": 29.1},
+    {"id": "321784018", "name": "Tesco Butter Chicken with Pilau Rice 400g", "price": 2.0, "ccPrice": null, "kcal": 613, "protein": 25.7},
+    {"id": "317531036", "name": "Tesco Creamy Cajun Chicken Pasta 400g", "price": 2.0, "ccPrice": null, "kcal": 578, "protein": 29.3},
+    {"id": "314943924", "name": "Tesco Chinese Style Chicken Curry & Rice 400g", "price": 2.0, "ccPrice": null, "kcal": 496, "protein": 24.3},
+    {"id": "314832226", "name": "Tesco Spaghetti Carbonara 400g", "price": 2.0, "ccPrice": null, "kcal": 532, "protein": 22.7},
+    {"id": "314822175", "name": "Tesco Chicken Arrabbiata 400g", "price": 2.0, "ccPrice": null, "kcal": 436, "protein": 26.5},
+    {"id": "317408074", "name": "Tesco Teriyaki Chicken & Jasmine Rice 400g", "price": 2.0, "ccPrice": null, "kcal": 601, "protein": 23.9},
+    {"id": "305833740", "name": "Tesco Chicken Jalfrezi With Pilau Rice 400G", "price": 2.0, "ccPrice": null, "kcal": 475, "protein": 24.5},
+    {"id": "321965352", "name": "Tesco Hot Tikka Masala & Pilau Rice 400g", "price": 2.0, "ccPrice": null, "kcal": 547, "protein": 25.7},
+    {"id": "299917731", "name": "Tesco Chicken Tikka Masala Pilau Rice 400G", "price": 2.0, "ccPrice": null, "kcal": 648, "protein": 25.2},
+    {"id": "321660706", "name": "Tesco Chicken Biryani 400g", "price": 2.0, "ccPrice": null, "kcal": 667, "protein": 21.2},
+    {"id": "321971275", "name": "Kitchen Joy Thai Sides 10 Thai Green Curry Gyoza 200g", "price": 2.0, "ccPrice": null, "kcal": 308, "protein": 13.6},
+    {"id": "321665851", "name": "Kitchen Joy Thai Sides 10 Red Curry Spring Rolls 200g", "price": 2.0, "ccPrice": null, "kcal": 496, "protein": 13.2},
+    {"id": "314701255", "name": "Tesco Keralan Style Chicken Curry 400g", "price": 2.0, "ccPrice": null, "kcal": 525, "protein": 24.9},
+    {"id": "299917754", "name": "Tesco Chicken Chow Mein 375G", "price": 2.0, "ccPrice": null, "kcal": 363, "protein": 19.2},
+    {"id": "299582618", "name": "Tesco Sweet & Sour Chicken with Egg Rice 400g", "price": 2.0, "ccPrice": null, "kcal": 512, "protein": 16.0},
+    {"id": "314694705", "name": "Tesco Chilli Beef Wedges 400g", "price": 2.0, "ccPrice": null, "kcal": 522, "protein": 23.3},
+    {"id": "317652814", "name": "Tesco Korean Style Spicy Chicken Noodles 400g", "price": 2.0, "ccPrice": null, "kcal": 366, "protein": 23.7},
+    {"id": "317660580", "name": "Tesco Chilli Beef Nacho Mac 'N' Cheese 400g", "price": 2.0, "ccPrice": null, "kcal": 593, "protein": 29.8},
+    {"id": "303182366", "name": "Tesco Fish Pie 400G", "price": 2.0, "ccPrice": null, "kcal": 373, "protein": 19.2},
+    {"id": "321845892", "name": "Tesco Chicken in black bean sauce & egg rice 400g", "price": 2.0, "ccPrice": null, "kcal": 451, "protein": 22.8},
+    {"id": "303182308", "name": "Tesco Minced Beef Hotpot 400G", "price": 2.0, "ccPrice": null, "kcal": 371, "protein": 15.4},
+    {"id": "321960766", "name": "Tesco Meat Feast Pasta Bake 400g", "price": 2.0, "ccPrice": null, "kcal": 595, "protein": 25.0},
+    {"id": "303182169", "name": "Tesco Cottage Pie 400G", "price": 2.0, "ccPrice": null, "kcal": 410, "protein": 12.4},
+    {"id": "303182268", "name": "Tesco Beef Lasagne 400G", "price": 2.0, "ccPrice": null, "kcal": 458, "protein": 24.7},
+    {"id": "299917719", "name": "Tesco Chicken Korma With Pilau Rice 400G", "price": 2.0, "ccPrice": null, "kcal": 504, "protein": 28.2},
+    {"id": "303182222", "name": "Tesco Chilli Con Carne Rice 400G", "price": 2.0, "ccPrice": null, "kcal": 456, "protein": 18.7},
+    {"id": "311266123", "name": "Tesco Calorie Controlled Lasagne 350G", "price": 2.1, "ccPrice": null, "kcal": 288, "protein": 18.1},
+    {"id": "303182406", "name": "Tesco Cottage Pie 350G", "price": 2.1, "ccPrice": null, "kcal": 237, "protein": 17.7},
+    {"id": "299344694", "name": "Hearty Food Co. 4 Mini Cheese And Tomato Pizzas 356g", "price": 2.15, "ccPrice": null, "kcal": 1046, "protein": 39.5},
+    {"id": "317995379", "name": "Annabel Karmel Mighty Bolognese Mac & Cheese 200g", "price": 2.2, "ccPrice": null, "kcal": 239, "protein": 12.0},
+    {"id": "295686122", "name": "Annabel Karmel Chicken Tikka Masala 200G", "price": 2.2, "ccPrice": null, "kcal": 232, "protein": 10.8},
+    {"id": "294037370", "name": "Annabel Karmel Frozen Chicken Pasta 200G", "price": 2.2, "ccPrice": null, "kcal": 204, "protein": 11.3},
+    {"id": "294037357", "name": "Annabel Karmel Frozen Hidden Vegetable Bolognese 200G", "price": 2.2, "ccPrice": null, "kcal": 196, "protein": 12.2},
+    {"id": "320397651", "name": "Kitchen Joy Chicken Panang Rich Coconut & Lime Curry with Jasmine Rice 350g", "price": 2.75, "ccPrice": 2.25, "kcal": 512, "protein": 21.0},
+    {"id": "323419639", "name": "itsu vegetable dim sum 168g", "price": 3.0, "ccPrice": null, "kcal": 290, "protein": 1.8},
+    {"id": "318280244", "name": "Kitchen Joy Thai Green Chicken Lemongrass & Coconut Curry with Noodles 320g", "price": 2.75, "ccPrice": 2.25, "kcal": 459, "protein": 20.0},
+    {"id": "317755897", "name": "Kitchen Joy Thai Red Chicken Aromatic Coconut Curry with Jasmine Rice 350g", "price": 2.75, "ccPrice": 2.25, "kcal": 474, "protein": 20.0},
+    {"id": "321826535", "name": "Kitchen Joy Thai Cube Vegetable Pad Thai 320g", "price": 2.75, "ccPrice": 2.25, "kcal": 504, "protein": 13.0},
+    {"id": "318170553", "name": "Kitchen Joy Spicy Sesame Chicken Aromatic Chilli with Noodles 320g", "price": 2.75, "ccPrice": 2.25, "kcal": 404, "protein": 21.0},
+    {"id": "251898848", "name": "Aunt Bessie's Meat Free Toad In The Hole 190G", "price": 2.25, "ccPrice": null, "kcal": 366, "protein": 18.0},
+    {"id": "321968493", "name": "Kitchen Joy Thai Cube Prawn Wonton Drunken Noodles 300g", "price": 2.75, "ccPrice": 2.25, "kcal": 552, "protein": 19.0},
+    {"id": "320388253", "name": "Kitchen Joy Sweet & Sour Chicken with Jasmine Rice 350g", "price": 2.75, "ccPrice": 2.25, "kcal": 473, "protein": 18.0},
+    {"id": "320394435", "name": "Kitchen Joy Tom Yum Chicken in a Coconut & Lemongrass Sauce with Noodles 320g", "price": 2.75, "ccPrice": 2.25, "kcal": 477, "protein": 20.0},
+    {"id": "305048391", "name": "Youngs Admirals Pie 300G", "price": 2.45, "ccPrice": null, "kcal": 290, "protein": 11.7},
+    {"id": "305053793", "name": "Youngs Fishermans Pie 300G", "price": 2.45, "ccPrice": null, "kcal": 311, "protein": 17.0},
+    {"id": "322326278", "name": "Tesco Thai Red Curry Banquet Meal For One 550g", "price": 3.0, "ccPrice": 2.5, "kcal": 665, "protein": 26.6},
+    {"id": "313623017", "name": "The Gym Kitchen Chicken & Chorizo Paella 400G", "price": 2.5, "ccPrice": null, "kcal": 325, "protein": 30.1},
+    {"id": "315456111", "name": "The Gym Kitchen Meat Feast Pasta 400g", "price": 2.5, "ccPrice": null, "kcal": 445, "protein": 32.5},
+    {"id": "321759844", "name": "Kitchen Joy Thai Fried Krapow Chicken 250g", "price": 2.5, "ccPrice": null, "kcal": 252, "protein": 21.0},
+    {"id": "322323903", "name": "Tesco Sweet & Sour Chicken Banquet 550g", "price": 3.0, "ccPrice": 2.5, "kcal": 607, "protein": 27.6},
+    {"id": "321965369", "name": "The Gym Kitchen Chicken Carbonara 400g", "price": 2.5, "ccPrice": null, "kcal": null, "protein": null},
+    {"id": "322426966", "name": "Tesco Chicken Tikka Banquet 550g", "price": 3.0, "ccPrice": 2.5, "kcal": 657, "protein": 32.4},
+    {"id": "310146434", "name": "The Gym Kitchen Beef Lasagne 400G", "price": 2.5, "ccPrice": null, "kcal": 378, "protein": 29.0},
+    {"id": "310663985", "name": "The Gym Kitchen Chicken Tikka Masala 400G", "price": 2.5, "ccPrice": null, "kcal": 365, "protein": 30.0},
+    {"id": "315459937", "name": "The Gym Kitchen Pulled Pork Mac & Cheese 400g", "price": 2.5, "ccPrice": null, "kcal": 411, "protein": 26.0},
+    {"id": "321944613", "name": "Kitchen Joy Thai Sides King Prawn Wonton Tom Yum Soup 147g", "price": 2.5, "ccPrice": null, "kcal": 220, "protein": 8.3},
+    {"id": "292469822", "name": "Tesco Classic Chicken Dinner 400G", "price": 2.65, "ccPrice": null, "kcal": 351, "protein": 28.1},
+    {"id": "292470059", "name": "Tesco Roast Beef Dinner 400G", "price": 2.65, "ccPrice": null, "kcal": 313, "protein": 20.9},
+    {"id": "292400397", "name": "Tesco All Day Breakfast 350G", "price": 2.65, "ccPrice": null, "kcal": 414, "protein": 23.1},
+    {"id": "323003503", "name": "Linda McCartney Shredded Hoisin Duck Vegan 260g", "price": 2.75, "ccPrice": null, "kcal": 444, "protein": 60.0},
+    {"id": "306928598", "name": "Tesco Plant Chef No Steak Pie 568G", "price": 2.85, "ccPrice": null, "kcal": 1212, "protein": 40.4},
+    {"id": "322340272", "name": "The Gym Kitchen Chicken Korma 550g", "price": 3.35, "ccPrice": 2.85, "kcal": null, "protein": null},
+    {"id": "317995581", "name": "The Gym Kitchen Chicken Katsu Curry 550g", "price": 3.35, "ccPrice": 2.85, "kcal": 580, "protein": 45.7},
+    {"id": "317647700", "name": "The Gym Kitchen Salt & Pepper Chicken 550g", "price": 3.35, "ccPrice": 2.85, "kcal": 555, "protein": 48.0},
+    {"id": "321530861", "name": "itsu spicy chicken soup dumplings 168g", "price": 3.0, "ccPrice": null, "kcal": 241, "protein": 11.0},
+    {"id": "321550175", "name": "itsu chicken bao sliders 165g", "price": 3.0, "ccPrice": null, "kcal": 337, "protein": 16.0},
+    {"id": "320565838", "name": "itsu 8 hoisin duck bao buns 256g", "price": 3.95, "ccPrice": null, "kcal": 568, "protein": 20.0},
+    {"id": "321969549", "name": "itsu prawn bao sliders 165g", "price": 3.0, "ccPrice": null, "kcal": 287, "protein": 14.0},
+    {"id": "321524638", "name": "itsu aromatic duck soup dumplings 168g", "price": 3.0, "ccPrice": null, "kcal": 237, "protein": 12.0},
+    {"id": "321837781", "name": "itsu thai style prawn soup dumplings 168g", "price": 3.0, "ccPrice": null, "kcal": 225, "protein": 12.0},
+    {"id": "323497948", "name": "Birds Eye Steamfresh Asian Style Rice 380g", "price": 3.0, "ccPrice": 2.25, "kcal": 346, "protein": 8.2, "deal": "Any 2 for £4.5"},
+    {"id": "320405505", "name": "itsu 8 teriyaki chicken bao buns 256g", "price": 3.95, "ccPrice": null, "kcal": 528, "protein": 23.2},
+    {"id": "317046417", "name": "itsu chicken soup dumplings 168g", "price": 3.0, "ccPrice": null, "kcal": 240, "protein": 13.0},
+    {"id": "322333776", "name": "Zizzi Tagliatelle Beef Ragu 400g", "price": 3.25, "ccPrice": null, "kcal": 506, "protein": null},
+    {"id": "322243445", "name": "Zizzi Spicy Chicken Rigatoni 400g", "price": 3.25, "ccPrice": null, "kcal": 539, "protein": 35.6},
+    {"id": "322320492", "name": "Zizzi Lentil & Sundried Tomato Ragu 400g", "price": 3.25, "ccPrice": null, "kcal": 423, "protein": 14.8},
+    {"id": "312708988", "name": "Itsu Vegetable Fusion Gyoza 270G", "price": 4.25, "ccPrice": null, "kcal": 467, "protein": 25.4},
+    {"id": "315050510", "name": "itsu garlic & chilli edamame 300g", "price": 3.25, "ccPrice": null, "kcal": 304, "protein": 15.8},
+    {"id": "299955276", "name": "Itsu Chicken Gyoza 240G", "price": null, "ccPrice": null, "kcal": 372, "protein": 19.7},
+    {"id": "305971063", "name": "Itsu Korean Bbq Beef Gyoza 12 Dumplings 240G", "price": 4.25, "ccPrice": null, "kcal": 458, "protein": 26.4},
+    {"id": "317403252", "name": "itsu vegetable tempura fries 350g", "price": 3.25, "ccPrice": null, "kcal": 560, "protein": 6.8},
+    {"id": "322239116", "name": "Zizzi Spaghetti Meatball Arrabbiata 400g", "price": 3.25, "ccPrice": null, "kcal": 436, "protein": 21.7},
+    {"id": "320687694", "name": "itsu king prawn gyoza 234g", "price": 4.25, "ccPrice": null, "kcal": 403, "protein": 18.5},
+    {"id": "317535815", "name": "itsu 12 hoisin duck gyoza 280g", "price": null, "ccPrice": null, "kcal": 468, "protein": 18.0},
+    {"id": "299955299", "name": "Itsu Pork Gyozas 240G", "price": 4.25, "ccPrice": null, "kcal": 444, "protein": 19.4},
+    {"id": "322261618", "name": "Zizzi Chorizo Spaghetti Carbonara 400g", "price": 3.25, "ccPrice": null, "kcal": 636, "protein": 26.7},
+    {"id": "314701848", "name": "Kirsty's Pasta Bolognese 300G", "price": 3.3, "ccPrice": null, "kcal": 273, "protein": 16.2},
+    {"id": "322326290", "name": "TESCO Mushroom Risotto 700g", "price": 3.35, "ccPrice": null, "kcal": 868, "protein": 17.2},
+    {"id": "317301044", "name": "Tesco Singapore Style Noodles 700g", "price": 3.35, "ccPrice": null, "kcal": 668, "protein": 38.6},
+    {"id": "317543195", "name": "Tesco Paella 700g", "price": 3.35, "ccPrice": null, "kcal": 904, "protein": 37.8},
+    {"id": "317403223", "name": "Tesco Thai Green Chicken Curry 700g", "price": 3.35, "ccPrice": null, "kcal": 680, "protein": 49.2},
+    {"id": "321675833", "name": "Tesco Steak Family Pie 700g", "price": 3.4, "ccPrice": null, "kcal": 1568, "protein": 60.8},
+    {"id": "321836690", "name": "Tesco Finest Chicken Massaman Curry with Jasmine rice 400g", "price": 3.5, "ccPrice": null, "kcal": 594, "protein": 24.3},
+    {"id": "317411426", "name": "Tesco Finest Sri Lankan Style Chicken Curry 400g", "price": 3.5, "ccPrice": null, "kcal": 558, "protein": 32.3},
+    {"id": "323428922", "name": "Birds Eye Steamfresh Korean Style Noodles 350g", "price": 3.5, "ccPrice": 2.25, "kcal": 375, "protein": 13.0, "deal": "Any 2 for £4.5"},
+    {"id": "316301691", "name": "Tesco Finest Chicken Tikka Masala with Spiced Basmati Rice 400g", "price": 3.5, "ccPrice": null, "kcal": 579, "protein": 28.4},
+    {"id": "317411115", "name": "Tesco Finest Coq Au Vin 400g", "price": 3.5, "ccPrice": null, "kcal": 374, "protein": 25.4},
+    {"id": "317289714", "name": "Tesco Finest Cottage Pie 400g", "price": 3.5, "ccPrice": null, "kcal": 449, "protein": 21.2},
+    {"id": "314307146", "name": "Schar Gluten Free Mini Calzone Bites 250G", "price": 3.5, "ccPrice": null, "kcal": 217, "protein": 6.0},
+    {"id": "314847128", "name": "Tesco Finest Lamb Moussaka 400g", "price": 3.5, "ccPrice": null, "kcal": 604, "protein": 24.4},
+    {"id": "314590943", "name": "Tesco Finest Beef Lasagne 400g", "price": 3.5, "ccPrice": null, "kcal": 554, "protein": 30.6},
+    {"id": "314703754", "name": "Tesco Finest Beef Bourguignon 400g", "price": 3.5, "ccPrice": null, "kcal": 422, "protein": 21.2},
+    {"id": "321854754", "name": "Tesco Finest Medley of Mushrooms & Chicken Risotto 400g", "price": 3.5, "ccPrice": null, "kcal": 459, "protein": 20.6},
+    {"id": "323303655", "name": "BOSH! Comforting Veg Pie with Lentils & Sliced Potato 400g", "price": 3.75, "ccPrice": null, "kcal": 394, "protein": 23.2},
+    {"id": "323165265", "name": "BOSH! Hearty Veg Lasagne with Rich Vegetable & Soya Ragu 400g", "price": 3.75, "ccPrice": null, "kcal": 408, "protein": 24.0},
+    {"id": "323143550", "name": "BOSH! Tofu Tikka Masala with Spice Grain Medley 400g", "price": 3.75, "ccPrice": null, "kcal": 442, "protein": 20.4},
+    {"id": "317535769", "name": "Tesco Creamy Chicken & Bacon Pasta 700g", "price": 3.95, "ccPrice": null, "kcal": 776, "protein": 53.8},
+    {"id": "323866662", "name": "Young's Gastro Luxury Fish Pie 370g", "price": 4.75, "ccPrice": null, "kcal": 494, "protein": 25.2},
+    {"id": "322756155", "name": "Tesco 2 Basa Fillets With Mediterranean-Style Vegetables & Tomato ragu 360g", "price": 5.0, "ccPrice": null, "kcal": 260, "protein": 40.4}
+];
+
+const FINEST_IDS = new Set(['321836690','317411426','316301691','317411115','317289714','314847128','314590943','314703754','321854754']);
+
+let excluded = new Set();
+let currentSort = {key: 'score', dir: -1};
+let searchTerm = '';
+
+function fmt(v, digits=2) { return v == null ? '<span class="null">—</span>' : v.toFixed(digits); }
+
+function effPrice(p) { return p.ccPrice || p.price; }
+
+function ppp(p) {
+  const ep = effPrice(p);
+  if (!ep || !p.protein) return null;
+  return ep / p.protein;
+}
+
+function render() {
+  const term = searchTerm.toLowerCase();
+  const rows = products
+    .filter(p => !term || p.name.toLowerCase().includes(term))
+    .map(p => {
+      const ep = effPrice(p);
+      return { ...p, ep,
+        ppp:   ep && p.protein ? ep / p.protein : null,
+        pkc:   ep && p.kcal   ? ep * 100 / p.kcal : null,
+        score: ep && p.kcal && p.protein ? (p.protein * p.protein * 4) / (ep * p.kcal) : null
+      };
+    })
+    .sort((a, b) => {
+      let av = a[currentSort.key], bv = b[currentSort.key];
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      if (typeof av === 'string') return av.localeCompare(bv) * currentSort.dir;
+      return (av - bv) * currentSort.dir;
+    });
+
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = rows.map(p => {
+    const ex = excluded.has(p.id);
+    const finest = FINEST_IDS.has(p.id);
+    return `<tr class="${ex ? 'excluded' : ''} ${finest ? 'finest' : ''}" data-id="${p.id}">
+      <td class="excl"><input type="checkbox" ${ex ? 'checked' : ''} onchange="toggle('${p.id}')"></td>
+      <td class="name"><a href="https://www.tesco.com/groceries/en-GB/products/${p.id}" target="_blank" rel="noopener">${p.name}</a></td>
+      <td class="price">${p.ep != null ? '£'+p.ep.toFixed(2)+(p.ccPrice ? ' <span style="font-size:10px;color:#1a6a2c;font-weight:700;">'+(p.deal ? p.deal+' CC' : 'CC')+'</span>' : '') : '<span class="null">—</span>'}</td>
+      <td class="kcal">${fmt(p.kcal, 0)}</td>
+      <td class="protein">${fmt(p.protein, 1)}<small>g</small></td>
+      <td class="protein">${p.ppp != null ? fmt(p.ppp, 3) : '<span class="null">—</span>'}</td>
+      <td class="protein">${p.pkc != null ? fmt(p.pkc, 2)+'p' : '<span class="null">—</span>'}</td>
+      <td class="protein" style="font-weight:${p.score>3?'700':'400'};color:${p.score>3?'#2e7d32':p.score>1.5?'inherit':'#aaa'}">${p.score != null ? fmt(p.score, 2) : '<span class="null">—</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  updateStats();
+  updateExcludedCount();
+}
+
+function updateStats() {
+  const kept = products.filter(p => !excluded.has(p.id));
+  const prices = kept.map(p => effPrice(p)).filter(x => x != null);
+  const kcals = kept.map(p => p.kcal).filter(x => x != null && x > 100);
+  const proteins = kept.map(p => p.protein).filter(x => x != null && x > 1 && x < 100);
+  const ppps = kept.filter(p => p.price && p.protein && p.protein < 100 && p.protein > 1).map(p => p.price / p.protein);
+
+  const avg = arr => arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : null;
+  const ap = avg(prices), ak = avg(kcals), apr = avg(proteins), appp = avg(ppps);
+  document.getElementById('s-count').textContent = kept.length;
+  document.getElementById('s-price').textContent = ap != null ? '£'+ap.toFixed(2) : '—';
+  document.getElementById('s-kcal').textContent = ak != null ? Math.round(ak) : '—';
+  document.getElementById('s-protein').textContent = apr != null ? apr.toFixed(1)+'g' : '—';
+  document.getElementById('s-cpp').textContent = appp != null ? '£'+appp.toFixed(3) : '—';
+}
+
+function updateExcludedCount() {
+  const n = excluded.size;
+  document.getElementById('excluded-count').textContent = n ? `${n} excluded` : '';
+}
+
+function toggle(id) {
+  if (excluded.has(id)) excluded.delete(id);
+  else excluded.add(id);
+  render();
+}
+
+function selectAll(excl) {
+  const term = searchTerm.toLowerCase();
+  products
+    .filter(p => !term || p.name.toLowerCase().includes(term))
+    .forEach(p => excl ? excluded.add(p.id) : excluded.delete(p.id));
+  render();
+}
+
+function applyFilter() {
+  searchTerm = document.getElementById('search').value;
+  render();
+}
+
+function sortBy(key) {
+  if (currentSort.key === key) currentSort.dir *= -1;
+  else { currentSort.key = key; currentSort.dir = 1; }
+  // Update header arrows
+  document.querySelectorAll('th').forEach(th => th.classList.remove('sorted'));
+  render();
+}
+
+function showExport() {
+  const area = document.getElementById('export-area');
+  area.style.display = area.style.display === 'none' ? 'block' : 'none';
+  document.getElementById('export-text').value = JSON.stringify([...excluded], null, 2);
+}
+
+// ── Persistence: localStorage + optional server apply ─────────────────────────
+const LS_KEY = 'excl_tesco';
+const API = 'http://localhost:5000/api';
+let saveTimer = null;
+
+function loadExclusions() {
+  try {
+    const ids = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+    ids.forEach(id => excluded.add(id));
+  } catch(e) {}
+  render();
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveExclusions, 400);
+}
+
+function saveExclusions() {
+  localStorage.setItem(LS_KEY, JSON.stringify([...excluded]));
+}
+
+async function applyToMealData() {
+  const status = document.getElementById('apply-status');
+  status.style.color = '#888';
+  status.textContent = 'Applying…';
+  try {
+    // Sync localStorage exclusions to server before applying
+    let cur = {};
+    try { cur = await (await fetch(`${API}/exclusions`)).json(); } catch(e) {}
+    cur['tesco'] = [...excluded];
+    await fetch(`${API}/exclusions`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cur)});
+    const r = await fetch(`${API}/apply/tesco`, { method: 'POST' });
+    const data = await r.json();
+    if (data.ok) {
+      const s = data.stats;
+      status.style.color = '#2e7d32';
+      status.textContent = `Done! meal-data.js updated: £${s.avg_price}/meal, ${s.avg_kcal} kcal, ${s.avg_protein}g protein (${s.kept} meals kept)`;
+    } else {
+      status.style.color = '#c0392b';
+      status.textContent = `Error: ${data.error}`;
+    }
+  } catch(e) {
+    status.style.color = '#c0392b';
+    status.textContent = 'Could not reach server — is server.py running?';
+  }
+}
+
+// Wrap toggle to also save
+const _origToggle = toggle;
+window.toggle = function(id) {
+  _origToggle(id);
+  scheduleSave();
+};
+const _origSelectAll = selectAll;
+window.selectAll = function(excl) {
+  _origSelectAll(excl);
+  scheduleSave();
+};
+
+// Initial load — fetch exclusions from server, then render
+loadExclusions();
+</script>
+</body>
+</html>

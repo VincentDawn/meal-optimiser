@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+
+# Playwright artefacts
+.playwright-mcp/
+playwright-report/
+test-results/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Claude
+.claude/
+CLAUDE.md.local
+
+# Local server / scraper outputs we don't want versioned
+scrapers/exclusions.json
+scrapers/prices_combined.json
+scrapers/*_prices.json

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Meal Strategy — Interactive Analysis</title>
+<script src="meal-data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #cdd9e5; padding: 28px; }
+  h1 { font-size: 1.4rem; color: #fff; margin-bottom: 4px; }
+  .sub { color: #6e7681; font-size: 0.82rem; margin-bottom: 22px; }
+
+  .slider-section { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 20px 24px; margin-bottom: 20px; }
+  .slider-section h2 { font-size: 0.78rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 18px; }
+  .sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .slider-group label { font-size: 0.82rem; color: #8b949e; display: block; margin-bottom: 6px; }
+  .slider-val { font-size: 1.8rem; font-weight: 700; color: #fff; line-height: 1.1; margin-bottom: 6px; }
+  .slider-val small { font-size: 0.8rem; color: #6e7681; font-weight: 400; margin-left: 4px; }
+  input[type=range] { width: 100%; height: 5px; border-radius: 3px; background: #30363d; outline: none; -webkit-appearance: none; cursor: pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #58a6ff; cursor: pointer; }
+  .tick-row { display: flex; justify-content: space-between; font-size: 0.68rem; color: #484f58; margin-top: 3px; }
+  .ref-line { font-size: 0.75rem; color: #d29922; margin-top: 6px; }
+  .ref-line-blue { font-size: 0.75rem; color: #58a6ff; margin-top: 4px; }
+
+  .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .stat { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 11px 16px; flex: 1; min-width: 130px; }
+  .stat-label { color: #6e7681; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-val { font-size: 1.15rem; font-weight: 700; color: #fff; margin-top: 3px; }
+  .green .stat-val { color: #3fb950; }
+  .amber .stat-val { color: #d29922; }
+  .blue .stat-val { color: #58a6ff; }
+
+  .top3 { display: flex; gap: 12px; margin-bottom: 18px; }
+  .top3-card { flex: 1; background: #161b22; border-radius: 9px; padding: 13px 15px; text-align: center; }
+  .gold { border: 1px solid #b8860b; } .silver { border: 1px solid #708090; } .bronze { border: 1px solid #8b4513; }
+  .medal { font-size: 1.3rem; } .medal-name { font-size: 0.85rem; color: #fff; font-weight: 600; margin: 4px 0; }
+  .medal-surplus { font-size: 0.95rem; color: #3fb950; font-weight: 700; }
+  .medal-stat { font-size: 0.72rem; color: #8b949e; margin-top: 3px; }
+
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px; margin-bottom: 18px; }
+  .card h2 { font-size: 0.78rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+  .legend-row { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #8b949e; }
+  .ldot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .note { font-size: 0.72rem; color: #6e7681; margin-top: 8px; line-height: 1.5; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.79rem; }
+  thead th { background: #1c2128; color: #6e7681; font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 7px 10px; text-align: left; border-bottom: 1px solid #30363d; white-space: nowrap; }
+  tbody td { padding: 7px 10px; border-bottom: 1px solid #21262d; vertical-align: top; }
+  tr.sec td { background: #1c2128; color: #6e7681; font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; padding: 5px 10px; }
+  tr.baseline td { background: #1c200a; }
+  tr.dominated { opacity: 0.3; }
+  tr:hover:not(.sec):not(.dominated) td { background: #1c2128; }
+  .pill { display: inline-block; padding: 1px 7px; border-radius: 12px; font-size: 0.67rem; font-weight: 600; }
+  .pg { background:#1a3a2a; color:#3fb950; } .pr { background:#2a1215; color:#f85149; }
+  .pa { background:#2a2000; color:#d29922; } .pgr { background:#1e2228; color:#6e7681; }
+  .pos { color:#3fb950; font-weight:600; } .neg { color:#f85149; font-weight:600; }
+  .dq-v { color:#3fb950; font-size:0.65rem; } .dq-e { color:#d29922; font-size:0.65rem; } .dq-u { color:#f85149; font-size:0.65rem; }
+  .sm-note { color:#6e7681; font-size:0.7rem; display:block; margin-top:1px; }
+  .unlock-note { color:#6e7681; font-size:0.67rem; margin-top:2px; }
+</style>
+</head>
+<body>
+
+<h1>Meal Strategy — Interactive Analysis</h1>
+<p class="sub">Loaded from meal-data.js · Edit that file to update costs, macros & options · 21 meals/week · £60k Scotland salary</p>
+
+<!-- SLIDERS -->
+<div class="slider-section">
+  <h2>Adjust your assumptions</h2>
+  <div class="sliders">
+    <div class="slider-group">
+      <label>Personal time value</label>
+      <div class="slider-val" id="tvDisplay">£17.23<small>/ hr net</small></div>
+      <input type="range" id="tvSlider" min="5" max="60" step="0.5" value="17.23">
+      <div class="tick-row"><span>£5</span><span>£20</span><span>£35</span><span>£50</span><span>£60</span></div>
+      <div class="ref-line" id="tvRef">▲ Matches your employment net rate (£17.23/hr)</div>
+    </div>
+    <div class="slider-group">
+      <label>DIY active cooking time per meal</label>
+      <div class="slider-val" id="cookDisplay">8<small>min active</small></div>
+      <input type="range" id="cookSlider" min="2" max="20" step="1" value="8">
+      <div class="tick-row"><span>2m</span><span>6m</span><span>10m</span><span>15m</span><span>20m</span></div>
+      <div class="ref-line-blue" id="cookRef">21 × 8 min = 2.80 hrs/wk active cooking</div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat"><div class="stat-label">Employment Net Rate</div><div class="stat-val">£17.23/hr</div></div>
+  <div class="stat blue"><div class="stat-label">Selected Time Value</div><div class="stat-val" id="sTV">£17.23/hr</div></div>
+  <div class="stat"><div class="stat-label">DIY Active Time/wk</div><div class="stat-val" id="sDIY">2.80 hrs</div></div>
+  <div class="stat"><div class="stat-label">Ready Meal Active/wk</div><div class="stat-val">0.18 hrs</div></div>
+  <div class="stat green"><div class="stat-label">Max Time Saveable</div><div class="stat-val" id="sSave">2.62 hrs/wk</div></div>
+  <div class="stat amber"><div class="stat-label">Value of Max Saving</div><div class="stat-val" id="sMaxVal">£45/wk</div></div>
+</div>
+
+<!-- TOP 3 -->
+<div class="top3" id="top3"></div>
+
+<!-- SURPLUS CHART — both shopping scenarios -->
+<div class="card">
+  <h2>Net Weekly Surplus vs DIY Farmfoods — comparing both shopping scenarios</h2>
+  <div class="legend-row">
+    <div class="legend-item"><div class="ldot" style="background:#3fb950"></div>Parents / recurring order (0 shopping time)</div>
+    <div class="legend-item"><div class="ldot" style="background:#3fb95066;border:1px solid #3fb950"></div>You shop yourself (adds travel + in-store time)</div>
+    <div class="legend-item"><div class="ldot" style="background:#f85149"></div>Not justified at selected time value</div>
+    <div class="legend-item"><div class="ldot" style="background:#484f58"></div>Dominated</div>
+  </div>
+  <div style="position:relative;height:540px"><canvas id="surplusChart"></canvas></div>
+  <p class="note">Solid bar = parents/recurring shop (0 travel). Faded bar = you do the shopping (adds self-shopping time). Gap between them = value of not doing the shopping yourself. Positive = justified upgrade from DIY Farmfoods baseline.</p>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <h2>Cost vs Active Time (parents shop scenario)</h2>
+    <div style="position:relative;height:360px"><canvas id="scatter"></canvas></div>
+    <p class="note">Break-even line slope = your time value. Points below = better value than DIY Farmfoods.</p>
+  </div>
+  <div class="card">
+    <h2>Break-even Time Value Required (net £/hr) — fixed by costs</h2>
+    <div style="position:relative;height:360px"><canvas id="barBreak"></canvas></div>
+    <p class="note">Your selected value shown as amber line. Green = justified now. Red = not yet.</p>
+  </div>
+</div>
+
+<!-- TABLE -->
+<div class="card">
+  <h2>Full Comparison Table — data from meal-data.js</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Option</th>
+        <th>£/meal</th>
+        <th>£/wk</th>
+        <th>Active time (parents)</th>
+        <th>Active time (self-shop)</th>
+        <th>Surplus (parents)</th>
+        <th>Surplus (self-shop)</th>
+        <th>Break-even net</th>
+        <th>Kcal/meal</th>
+        <th>Protein/meal</th>
+        <th>£/100kcal</th>
+        <th>£/10g protein</th>
+        <th>Data quality</th>
+        <th>Justified?</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <p class="note" style="margin-top:8px">Data quality: <span class="dq-v">● verified</span> from published sources · <span class="dq-e">● estimated</span> reasonable guess · <span class="dq-u">● unknown</span> needs checking</p>
+</div>
+
+<script>
+// ═══════════════════════════════════
+// STATE — loaded from meal-data.js
+// ═══════════════════════════════════
+const META  = MEAL_DATASET.meta;
+const OPTS  = MEAL_DATASET.options;
+const MEALS = META.meals_per_week;
+const HEAT  = META.heat_active_secs / 3600;  // hours
+const NET_EMPLOYMENT = 17.23;
+const KEEP = 0.56;
+
+let TIME_VALUE = 17.23;
+let COOK_MINS  = 8;
+
+const CAT_COLOR = {
+  DIY: '#d29922', MD: '#f0883e', SRM: '#3fb950', SVC: '#58a6ff',
+};
+const CAT_LABEL = {
+  DIY: 'Supermarket DIY', MD: 'Meal Deal Hybrid',
+  SRM: 'Supermarket Ready Meals', SVC: 'Meal Delivery Services',
+};
+
+// ═══════════════════════════════════
+// TIME CALCULATIONS
+// ═══════════════════════════════════
+function diyHrs()  { return MEALS * COOK_MINS / 60; }
+function mdHrs()   { return (MEALS - 5) * COOK_MINS / 60 + 5 / 60; }
+function readyHrs(){ return MEALS * HEAT; }
+
+function activeHrs(opt, includeShopping) {
+  let base = opt.timeType === 'DIY' ? diyHrs() : opt.timeType === 'MD' ? mdHrs() : readyHrs();
+  if (includeShopping) base += (opt.selfShoppingMins || 0) / 60;
+  return base;
+}
+
+function baselineHrs(includeShopping) {
+  const b = OPTS.find(o => o.baseline);
+  return activeHrs(b, includeShopping);
+}
+
+function surplus(opt, includeShopping) {
+  if (opt.baseline) return 0;
+  const saved = baselineHrs(includeShopping) - activeHrs(opt, includeShopping);
+  return saved * TIME_VALUE - (opt.weeklyCost - OPTS.find(o => o.baseline).weeklyCost);
+}
+
+function beNet(opt) {
+  if (opt.baseline) return null;
+  const saved = baselineHrs(false) - activeHrs(opt, false);
+  const extra = opt.weeklyCost - OPTS.find(o => o.baseline).weeklyCost;
+  if (saved <= 0) return Infinity;
+  return extra / saved;
+}
+
+function catColor(opt) {
+  if (opt.dominated) return '#484f58';
+  if (opt.baseline)  return '#d29922';
+  return CAT_COLOR[opt.category] || '#8b949e';
+}
+
+function nonDominated() {
+  return OPTS.filter(o => !o.dominated);
+}
+
+// ═══════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════
+let surplusChart, scatterChart, breakChart;
+
+function buildCharts() {
+  const sorted = nonDominated().filter(o => !o.baseline)
+    .sort((a,b) => surplus(b, false) - surplus(a, false));
+
+  // surplus — grouped bars
+  surplusChart = new Chart(document.getElementById('surplusChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: sorted.map(o => o.label),
+      datasets: [
+        {
+          label: 'Parents / recurring (0 shopping)',
+          data: sorted.map(o => parseFloat(surplus(o, false).toFixed(1))),
+          backgroundColor: sorted.map(o => surplusColor(surplus(o, false))),
+          borderRadius: 3,
+        },
+        {
+          label: 'You shop yourself',
+          data: sorted.map(o => parseFloat(surplus(o, true).toFixed(1))),
+          backgroundColor: sorted.map(o => surplusColor(surplus(o, true)) + '66'),
+          borderColor: sorted.map(o => surplusColor(surplus(o, true))),
+          borderWidth: 1,
+          borderRadius: 3,
+        },
+      ],
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#8b949e', font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const opt = sorted[ctx.dataIndex];
+              const v = ctx.raw;
+              return `£${v >= 0 ? '+' : ''}${v.toFixed(0)}/wk · BE: £${beNet(opt)?.toFixed(2) || 'N/A'}/hr net`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid:{color:'#21262d'}, ticks:{color:'#6e7681', callback:v=>'£'+v} },
+        y: { grid:{color:'#21262d'}, ticks:{color:'#aaa', font:{size:10}} },
+      }
+    },
+    plugins: [zeroLinePlugin],
+  });
+
+  // scatter
+  const scatterDatasets = OPTS.map(opt => ({
+    label: opt.label,
+    data: [{ x: activeHrs(opt, false), y: opt.weeklyCost }],
+    backgroundColor: catColor(opt),
+    pointRadius: opt.baseline ? 11 : 7,
+    pointStyle: opt.baseline ? 'triangle' : 'circle',
+  }));
+  scatterDatasets.push(breakEvenLineDataset());
+
+  scatterChart = new Chart(document.getElementById('scatter').getContext('2d'), {
+    type: 'scatter',
+    data: { datasets: scatterDatasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { title: ctx => ctx[0].dataset.label, label: ctx => `£${ctx.raw.y}/wk · ${ctx.raw.x.toFixed(2)} hrs active` } }
+      },
+      scales: {
+        x: { title:{display:true,text:'Weekly Active Time (hrs)',color:'#6e7681'}, grid:{color:'#21262d'}, ticks:{color:'#6e7681'}, min:0, max:3.5 },
+        y: { title:{display:true,text:'Weekly Cost (£)',color:'#6e7681'}, grid:{color:'#21262d'}, ticks:{color:'#6e7681',callback:v=>'£'+v}, min:0, max:240 },
+      }
+    },
+    plugins: [ptLabelPlugin],
+  });
+
+  // break-even bar
+  const beData = OPTS.filter(o => !o.baseline && !o.dominated)
+    .sort((a,b) => (beNet(a)??Infinity) - (beNet(b)??Infinity));
+  breakChart = new Chart(document.getElementById('barBreak').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: beData.map(o => o.label),
+      datasets: [{ data: beData.map(o => { const b=beNet(o); return b===Infinity?null:parseFloat(b.toFixed(2)); }), backgroundColor: beData.map(o => beColor(o)), borderRadius:3 }]
+    },
+    options: {
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins: { legend:{display:false}, tooltip:{callbacks:{label:ctx=>`£${ctx.raw?.toFixed(2)||'?'}/hr net`}} },
+      scales: {
+        x: { grid:{color:'#21262d'}, ticks:{color:'#6e7681',callback:v=>'£'+v}, max:75 },
+        y: { grid:{color:'#21262d'}, ticks:{color:'#aaa',font:{size:10}} },
+      }
+    },
+    plugins: [rateLinePlugin],
+  });
+}
+
+// ═══════════════════════════════════
+// PLUGINS
+// ═══════════════════════════════════
+const zeroLinePlugin = {
+  id: 'zeroLine',
+  afterDraw(chart) {
+    const { ctx, scales: { x }, chartArea } = chart;
+    const x0 = x.getPixelForValue(0);
+    ctx.save();
+    ctx.beginPath(); ctx.moveTo(x0, chartArea.top); ctx.lineTo(x0, chartArea.bottom);
+    ctx.strokeStyle='#484f58'; ctx.lineWidth=1.5; ctx.setLineDash([4,3]); ctx.stroke();
+    ctx.restore();
+  }
+};
+
+const ptLabelPlugin = {
+  id: 'ptLabels',
+  afterDatasetsDraw(chart) {
+    chart.data.datasets.forEach((ds, i) => {
+      if (!ds.data[0] || ds.type === 'line') return;
+      const meta = chart.getDatasetMeta(i);
+      if (!meta.data[0]) return;
+      const pt = meta.data[0];
+      const ctx = chart.ctx;
+      ctx.save();
+      ctx.fillStyle='#8b949e'; ctx.font='9.5px sans-serif'; ctx.textAlign='left';
+      const maxX = chart.chartArea.right - ctx.measureText(ds.label).width - 3;
+      ctx.fillText(ds.label, Math.min(pt.x+7, maxX), pt.y-4);
+      ctx.restore();
+    });
+  }
+};
+
+const rateLinePlugin = {
+  id: 'rateLine',
+  afterDraw(chart) {
+    const { ctx, scales: { x }, chartArea } = chart;
+    const xp = x.getPixelForValue(TIME_VALUE);
+    if (xp < chartArea.left || xp > chartArea.right) return;
+    ctx.save();
+    ctx.beginPath(); ctx.moveTo(xp, chartArea.top); ctx.lineTo(xp, chartArea.bottom);
+    ctx.strokeStyle='#d29922'; ctx.lineWidth=2; ctx.setLineDash([6,4]); ctx.stroke();
+    ctx.fillStyle='#d29922'; ctx.font='bold 9px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Your value', xp, chartArea.top-5);
+    ctx.restore();
+  }
+};
+
+// ═══════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════
+function surplusColor(v) {
+  if (v > 40) return '#3fb950';
+  if (v > 15) return '#56d364';
+  if (v > 0)  return '#7ee787';
+  return '#f85149';
+}
+function beColor(opt) {
+  const b = beNet(opt);
+  if (b === Infinity || b === null) return '#484f58';
+  return b <= TIME_VALUE ? catColor(opt) : '#f85149';
+}
+function breakEvenLineDataset() {
+  const base = baselineHrs(false);
+  const baseCost = OPTS.find(o=>o.baseline).weeklyCost;
+  const pts = [];
+  for (let h = 0; h <= 3.3; h += 0.1) {
+    const y = baseCost + (base - h) * TIME_VALUE;
+    if (y >= 0 && y <= 240) pts.push({ x: parseFloat(h.toFixed(1)), y: parseFloat(y.toFixed(1)) });
+  }
+  return { label:'Break-even line', data:pts, type:'line', borderColor:'#238636', borderWidth:2, borderDash:[7,5], pointRadius:0, fill:false, tension:0, backgroundColor:'transparent' };
+}
+function dqBadge(q) {
+  if (q==='verified') return '<span class="dq-v">● verified</span>';
+  if (q==='estimated') return '<span class="dq-e">● estimated</span>';
+  return '<span class="dq-u">● unknown</span>';
+}
+
+// ═══════════════════════════════════
+// UPDATE
+// ═══════════════════════════════════
+function updateAll() {
+  const diy = diyHrs();
+  const ready = readyHrs();
+  const baseCost = OPTS.find(o=>o.baseline).weeklyCost;
+
+  // Stats
+  document.getElementById('sTV').textContent = `£${TIME_VALUE.toFixed(2)}/hr`;
+  document.getElementById('sDIY').textContent = `${diy.toFixed(2)} hrs`;
+  document.getElementById('sSave').textContent = `${(diy - ready).toFixed(2)} hrs/wk`;
+  document.getElementById('sMaxVal').textContent = `£${((diy-ready)*TIME_VALUE).toFixed(0)}/wk`;
+
+  // Slider labels
+  document.getElementById('tvDisplay').innerHTML = `£${TIME_VALUE.toFixed(2)}<small>/ hr net</small>`;
+  document.getElementById('cookDisplay').innerHTML = `${COOK_MINS}<small>min active</small>`;
+  const ratio = TIME_VALUE / NET_EMPLOYMENT;
+  document.getElementById('tvRef').textContent = Math.abs(ratio-1) < 0.03
+    ? '▲ Matches your employment net rate (£17.23/hr)'
+    : `▲ Your employment net rate is £17.23/hr — you're at ${ratio.toFixed(1)}×`;
+  document.getElementById('cookRef').textContent = `21 × ${COOK_MINS} min = ${diy.toFixed(2)} hrs/wk active cooking`;
+
+  // Top 3
+  const ranked = OPTS.filter(o=>!o.baseline&&!o.dominated)
+    .map(o=>({...o, s: surplus(o,false)})).filter(o=>o.s>0)
+    .sort((a,b)=>b.s-a.s);
+  const medals=['🥇','🥈','🥉'], cls=['gold','silver','bronze'];
+  document.getElementById('top3').innerHTML = ranked.slice(0,3).map((o,i) =>
+    `<div class="top3-card ${cls[i]}">
+      <div class="medal">${medals[i]}</div>
+      <div class="medal-name">${o.label}</div>
+      <div class="medal-surplus">+£${o.s.toFixed(0)}/wk surplus</div>
+      <div class="medal-stat">£${o.costPerMeal?.toFixed(2)||'?'}/meal · BE: £${beNet(o)?.toFixed(2)||'?'}/hr net</div>
+    </div>`
+  ).join('') || '<div style="color:#f85149;font-size:0.85rem;padding:12px">No options justified at this time value.</div>';
+
+  // Surplus chart update
+  const sorted = nonDominated().filter(o=>!o.baseline)
+    .sort((a,b)=>surplus(b,false)-surplus(a,false));
+  surplusChart.data.labels = sorted.map(o=>o.label);
+  surplusChart.data.datasets[0].data = sorted.map(o=>parseFloat(surplus(o,false).toFixed(1)));
+  surplusChart.data.datasets[0].backgroundColor = sorted.map(o=>surplusColor(surplus(o,false)));
+  surplusChart.data.datasets[1].data = sorted.map(o=>parseFloat(surplus(o,true).toFixed(1)));
+  surplusChart.data.datasets[1].backgroundColor = sorted.map(o=>surplusColor(surplus(o,true))+'66');
+  surplusChart.data.datasets[1].borderColor = sorted.map(o=>surplusColor(surplus(o,true)));
+  surplusChart.update('none');
+
+  // Scatter update
+  OPTS.forEach((opt, i) => {
+    if (scatterChart.data.datasets[i]) {
+      scatterChart.data.datasets[i].data = [{ x: activeHrs(opt, false), y: opt.weeklyCost }];
+    }
+  });
+  const lastIdx = scatterChart.data.datasets.length - 1;
+  scatterChart.data.datasets[lastIdx] = breakEvenLineDataset();
+  scatterChart.update('none');
+
+  // Break-even chart update
+  const beData = OPTS.filter(o=>!o.baseline&&!o.dominated)
+    .sort((a,b)=>(beNet(a)??Infinity)-(beNet(b)??Infinity));
+  breakChart.data.datasets[0].data = beData.map(o=>{const b=beNet(o);return b===Infinity?null:parseFloat(b.toFixed(2));});
+  breakChart.data.datasets[0].backgroundColor = beData.map(o=>beColor(o));
+  breakChart.update('none');
+
+  // Table
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  ['DIY','MD','SRM','SVC'].forEach(sec => {
+    const secOpts = OPTS.filter(o=>o.category===sec);
+    const hdr = document.createElement('tr'); hdr.className='sec';
+    hdr.innerHTML = `<td colspan="14">${CAT_LABEL[sec]}</td>`;
+    tbody.appendChild(hdr);
+    secOpts.forEach(opt => {
+      const be = beNet(opt);
+      const sp = surplus(opt, false);
+      const spSelf = surplus(opt, true);
+      const justified = be !== null && be !== Infinity && be <= TIME_VALUE;
+      const dominated = be === Infinity;
+      const tr = document.createElement('tr');
+      if (opt.baseline) tr.className = 'baseline';
+      else if (opt.dominated) tr.className = 'dominated';
+
+      let badge = '';
+      if (opt.baseline) badge = '<span class="pill pa">Baseline</span>';
+      else if (dominated) badge = '<span class="pill pgr">Dominated</span>';
+      else if (justified) badge = '<span class="pill pg">✓ Yes</span>';
+      else badge = `<span class="pill pr">✗ No</span><div class="unlock-note">needs £${be?.toFixed(2)||'?'}/hr</div>`;
+
+      const kcalPer100 = opt.calories ? (opt.costPerMeal / opt.calories * 100).toFixed(2) : '—';
+      const protPer10  = opt.protein  ? (opt.costPerMeal / opt.protein  * 10 ).toFixed(2) : '—';
+
+      tr.innerHTML = `
+        <td><strong style="color:${catColor(opt)}">${opt.label}</strong><span class="sm-note">${opt.notes}</span></td>
+        <td>£${opt.costPerMeal?.toFixed(2)||'?'}</td>
+        <td>£${opt.weeklyCost}/wk</td>
+        <td>${activeHrs(opt,false).toFixed(2)} hrs</td>
+        <td>${activeHrs(opt,true).toFixed(2)} hrs</td>
+        <td>${opt.baseline?'—':`<span class="${sp>=0?'pos':'neg'}">£${sp>=0?'+':''}${sp.toFixed(0)}/wk</span>`}</td>
+        <td>${opt.baseline?'—':`<span class="${spSelf>=0?'pos':'neg'}">£${spSelf>=0?'+':''}${spSelf.toFixed(0)}/wk</span>`}</td>
+        <td>${be===null?'—':dominated?'N/A':'£'+be.toFixed(2)+'/hr'}</td>
+        <td>${opt.calories??'—'}</td>
+        <td>${opt.protein!=null?opt.protein+'g':'—'}</td>
+        <td>${kcalPer100!=='—'?'£'+kcalPer100:'—'}</td>
+        <td>${protPer10!=='—'?'£'+protPer10:'—'}</td>
+        <td>${dqBadge(opt.dataQuality)}</td>
+        <td>${badge}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+buildCharts();
+updateAll();
+document.getElementById('tvSlider').addEventListener('input', e => { TIME_VALUE = parseFloat(e.target.value); updateAll(); });
+document.getElementById('cookSlider').addEventListener('input', e => { COOK_MINS = parseInt(e.target.value); updateAll(); });
+</script>
+</body>
+</html>

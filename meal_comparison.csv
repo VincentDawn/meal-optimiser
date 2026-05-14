@@ -1,0 +1,14 @@
+Metric,DIY (Farmfoods),Sainsburys,Prepped Pots
+Meals per week,21,21,20
+Calories,10500,10500,10000
+Price per meal,1.00,3.00,4.19
+Weekly cost (inc buffer),31.00,73.00,83.80
+Time per meal (mins),20,5,5
+Shopping per week (mins),25,19,0
+Total time per week (hrs),7.4,1.94,1.67
+Break-even vs DIY (per hr),-,7.69,9.18
+
+Decision Guide:
+Under 7.69/hr = DIY
+7.69-9.18/hr = Sainsburys
+Over 9.18/hr = Prepped Pots

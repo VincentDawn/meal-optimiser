@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>M&amp;S Ready Meals — Filter</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; font-size: 14px; background: #f5f5f5; color: #222; }
+  h1 { padding: 16px 20px 8px; font-size: 18px; }
+  #stats {
+    position: sticky; top: 0; z-index: 10;
+    background: #1a5c2a; color: #fff;
+    display: flex; flex-wrap: wrap; gap: 20px;
+    padding: 10px 20px; align-items: center;
+  }
+  #stats .stat { text-align: center; }
+  #stats .stat .val { font-size: 22px; font-weight: 700; }
+  #stats .stat .lbl { font-size: 11px; opacity: 0.8; }
+  #stats .sep { width: 1px; background: rgba(255,255,255,0.3); align-self: stretch; }
+  #controls {
+    padding: 10px 20px; background: #fff; border-bottom: 1px solid #ddd;
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  #controls input[type=text] {
+    border: 1px solid #ccc; border-radius: 4px; padding: 5px 10px;
+    font-size: 13px; width: 280px;
+  }
+  button { background: #1a5c2a; color: #fff; border: none; border-radius: 4px; padding: 5px 12px; cursor: pointer; font-size: 13px; }
+  button:hover { background: #236b33; }
+  button.danger { background: #c0392b; }
+  button.danger:hover { background: #e74c3c; }
+  button.apply { background: #2e7d32; }
+  #excluded-count { font-size: 13px; color: #888; }
+  #apply-status { font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #eee; border-bottom: 2px solid #ccc; padding: 7px 10px; text-align: left; cursor: pointer; white-space: nowrap; position: sticky; top: 57px; z-index: 5; }
+  th:hover { background: #ddd; }
+  td { padding: 6px 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  tr.excluded { opacity: 0.35; }
+  tr.excluded td { text-decoration: line-through; }
+  tr:hover td { background: #f0f7f0; }
+  td.name { max-width: 340px; }
+  td.name a { color: inherit; text-decoration: none; }
+  td.name a:hover { text-decoration: underline; color: #1a5c2a; }
+  td.price, td.kcal, td.protein { text-align: right; width: 90px; }
+  td.excl { text-align: center; width: 40px; }
+  input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: #c0392b; }
+  .null { color: #bbb; font-style: italic; }
+  .deal { font-size: 11px; color: #1a5c2a; font-weight: 600; }
+
+  /* dark mode */
+  body { background: #121212; color: #e8e8e8; }
+  h1 { color: #e8e8e8; }
+  #controls { background: #1e1e1e; border-bottom-color: #333; }
+  #controls input[type=text] { background: #252525; border-color: #444; color: #e8e8e8; }
+  #controls input[type=number] { background: #252525; border-color: #444; color: #e8e8e8; }
+  #controls select { background: #252525; border-color: #444; color: #e8e8e8; }
+  #controls label { color: #ccc; }
+  #excluded-count { color: #888; }
+  th { background: #252525; border-bottom-color: #444; color: #e8e8e8; }
+  th:hover { background: #2f2f2f; }
+  td { border-bottom-color: #2a2a2a; color: #e8e8e8; }
+  tr:hover td { background: #252525 !important; }
+  tr.excluded td { color: #555; }
+  .null { color: #555; }
+  table { background: #121212; }
+</style>
+</head>
+<body>
+
+<div style="padding:10px 20px 0;"><a href="index.html" style="font-size:13px;color:#1a5c2a;text-decoration:none;">← All providers</a></div>
+<h1>M&amp;S Ready Meals (Ocado) — Filter Tool</h1>
+
+<div id="stats">
+  <div class="stat"><div class="val" id="s-count">—</div><div class="lbl">meals kept</div></div>
+  <div class="sep"></div>
+  <div class="stat"><div class="val" id="s-price">—</div><div class="lbl">avg price (deal)</div></div>
+  <div class="sep"></div>
+  <div class="stat"><div class="val" id="s-kcal">—</div><div class="lbl">avg kcal</div></div>
+  <div class="sep"></div>
+  <div class="stat"><div class="val" id="s-protein">—</div><div class="lbl">avg protein</div></div>
+  <div class="sep"></div>
+  <div class="stat"><div class="val" id="s-cpp">—</div><div class="lbl">£/g protein</div></div>
+</div>
+
+<div id="controls">
+  <input type="text" id="search" placeholder="Filter by name…" oninput="applyFilter()">
+  <button onclick="selectAll(false)">Restore all</button>
+  <button class="danger" onclick="selectAll(true)">Exclude all visible</button>
+  <button class="apply" onclick="applyToMealData()">Apply to meal-data.js</button>
+  <span id="excluded-count"></span>
+  <span id="apply-status"></span>
+</div>
+
+<table id="tbl">
+  <thead>
+    <tr>
+      <th class="excl">✕</th>
+      <th onclick="sortBy('name')">Name</th>
+      <th onclick="sortBy('size')">Size</th>
+      <th onclick="sortBy('price')">Price</th>
+      <th onclick="sortBy('dealPrice')">Deal price</th>
+      <th onclick="sortBy('kcal')">Kcal</th>
+      <th onclick="sortBy('protein')">Protein</th>
+      <th onclick="sortBy('ppp')">£/protein g</th>
+      <th onclick="sortBy('pkc')">p/kcal</th>
+      <th onclick="sortBy('score')">Score</th>
+    </tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+</table>
+
+<script>
+const KEY = 'ms';
+const products = [
+  {"id":"516551011","name":"M&S Beef Cumberland Pie","price":4.0,"dealPrice":null,"size":"400g","kcal":472,"protein":29.2,"ocadoSlug":"m-s-beef-cumberland-pie"},
+  {"id":"516668011","name":"M&S Beef Hotpot Mini Meal","price":2.75,"dealPrice":null,"size":"200g","kcal":232,"protein":16.2,"ocadoSlug":"m-s-beef-hotpot-mini-meal"},
+  {"id":"514496011","name":"M&S Beef Lasagne Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":644,"protein":30.4,"ocadoSlug":"m-s-beef-lasagne-serves-1"},
+  {"id":"514021011","name":"M&S Butter Chicken Curry","price":5.5,"dealPrice":null,"size":"400g","kcal":768,"protein":54.4,"ocadoSlug":"m-s-butter-chicken-curry"},
+  {"id":"543982011","name":"M&S Butter Chicken with Basmati Rice","price":4.25,"dealPrice":null,"size":"400g","kcal":700,"protein":35.6,"ocadoSlug":"m-s-butter-chicken-with-basmati-rice"},
+  {"id":"514027011","name":"M&S Cantonese Sweet & Sour Chicken with Egg Fried Rice","price":4.3,"dealPrice":null,"size":"400g","kcal":620,"protein":30.8,"ocadoSlug":"m-s-cantonese-sweet-sour-chicken-with-egg-fried-rice"},
+  {"id":"514515011","name":"M&S Chicken & Bacon Pasta Bake Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":640,"protein":38.0,"ocadoSlug":"m-s-chicken-bacon-pasta-bake-serves-1"},
+  {"id":"516818011","name":"M&S Chicken & Dumpling Casserole Mini Meal","price":2.75,"dealPrice":null,"size":"200g","kcal":286,"protein":15.4,"ocadoSlug":"m-s-chicken-dumpling-casserole-mini-meal"},
+  {"id":"518988011","name":"M&S Chicken Alfredo","price":4.0,"dealPrice":3.33,"size":"400g","kcal":568,"protein":35.2,"ocadoSlug":"m-s-chicken-alfredo"},
+  {"id":"514543011","name":"M&S Chicken Arrabbiata Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":456,"protein":30.8,"ocadoSlug":"m-s-chicken-arrabbiata-serves-1"},
+  {"id":"514105011","name":"M&S Chicken Chow Mein","price":5.4,"dealPrice":null,"size":"400g","kcal":492,"protein":31.6,"ocadoSlug":"m-s-chicken-chow-mein"},
+  {"id":"516749011","name":"M&S Chicken Provencale","price":6.0,"dealPrice":null,"size":"345g","kcal":178,"protein":22.6,"ocadoSlug":"m-s-chicken-provencale"},
+  {"id":"518979011","name":"M&S Chicken Tagliatelle Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":532,"protein":29.2,"ocadoSlug":"m-s-chicken-tagliatelle-serves-1"},
+  {"id":"514204011","name":"M&S Chicken Tikka Masala","price":5.5,"dealPrice":null,"size":"400g","kcal":676,"protein":48.8,"ocadoSlug":"m-s-chicken-tikka-masala"},
+  {"id":"513965011","name":"M&S Chicken Tikka Masala with Basmati Rice","price":4.25,"dealPrice":null,"size":"400g","kcal":636,"protein":33.2,"ocadoSlug":"m-s-chicken-tikka-masala-with-basmati-rice"},
+  {"id":"671246011","name":"M&S Chicken Tomato & Mozzarella Orzotto Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":524,"protein":29.6,"ocadoSlug":"m-s-chicken-tomato-mozzarella-orzotto-serves-1"},
+  {"id":"516296011","name":"M&S Chilli Con Carne with Rice","price":4.25,"dealPrice":null,"size":"450g","kcal":536,"protein":24.8,"ocadoSlug":"m-s-chilli-con-carne-with-rice"},
+  {"id":"543720011","name":"M&S Classic Margherita Woodfired & Stonebaked Pizza","price":6.0,"dealPrice":null,"size":"428g","kcal":537,"protein":24.6,"ocadoSlug":"m-s-classic-margherita-woodfired-stonebaked-pizza"},
+  {"id":"516671011","name":"M&S Cottage Pie","price":4.0,"dealPrice":null,"size":"400g","kcal":456,"protein":29.6,"ocadoSlug":"m-s-cottage-pie"},
+  {"id":"515156011","name":"M&S Count On Us Chicken Arrabbiata","price":4.25,"dealPrice":null,"size":"350g","kcal":371,"protein":25.9,"ocadoSlug":"m-s-count-on-us-chicken-arrabbiata"},
+  {"id":"515875011","name":"M&S Count On Us Chicken Jalfrezi with Rice","price":4.25,"dealPrice":null,"size":"400g","kcal":372,"protein":30.0,"ocadoSlug":"m-s-count-on-us-chicken-jalfrezi-with-rice"},
+  {"id":"515773011","name":"M&S Count On Us Chicken Tikka Masala & Rice","price":4.25,"dealPrice":null,"size":"400g","kcal":368,"protein":27.6,"ocadoSlug":"m-s-count-on-us-chicken-tikka-masala-rice"},
+  {"id":"515859011","name":"M&S Count On Us Haddock Mornay","price":4.75,"dealPrice":null,"size":"380g","kcal":312,"protein":29.3,"ocadoSlug":"m-s-count-on-us-haddock-mornay"},
+  {"id":"649122011","name":"M&S Count On Us Piri Piri Chicken","price":4.5,"dealPrice":null,"size":"350g","kcal":354,"protein":26.6,"ocadoSlug":"m-s-count-on-us-piri-piri-chicken"},
+  {"id":"545661011","name":"M&S Count On Us Sweet & Sour Chicken","price":4.25,"dealPrice":null,"size":"350g","kcal":375,"protein":25.9,"ocadoSlug":"m-s-count-on-us-sweet-sour-chicken"},
+  {"id":"515271011","name":"M&S Count on Us Naked Chicken Katsu Curry","price":4.25,"dealPrice":null,"size":"380g","kcal":323,"protein":25.9,"ocadoSlug":"m-s-count-on-us-naked-chicken-katsu-curry"},
+  {"id":"515636011","name":"M&S Count on Us Thai Red Chicken Curry","price":4.25,"dealPrice":null,"size":"380g","kcal":331,"protein":23.9,"ocadoSlug":"m-s-count-on-us-thai-red-chicken-curry"},
+  {"id":"514212011","name":"M&S Crispy Katsu Chicken Curry with Rice - Taste of Asia","price":5.0,"dealPrice":null,"size":"380g","kcal":616,"protein":27.4,"ocadoSlug":"m-s-crispy-katsu-chicken-curry-with-rice-taste-of-asia"},
+  {"id":"516884011","name":"M&S Fruity Chicken Curry with Rice","price":4.25,"dealPrice":null,"size":"400g","kcal":512,"protein":28.0,"ocadoSlug":"m-s-fruity-chicken-curry-with-rice"},
+  {"id":"516500011","name":"M&S Fruity Chicken Curry with Rice Mini Meal","price":2.75,"dealPrice":null,"size":"200g","kcal":258,"protein":15.2,"ocadoSlug":"m-s-fruity-chicken-curry-with-rice-mini-meal"},
+  {"id":"516558011","name":"M&S Gastropub Chicken Kyiv for One","price":6.5,"dealPrice":null,"size":"225g","kcal":464,"protein":37.6,"ocadoSlug":"m-s-gastropub-chicken-kyiv-for-one"},
+  {"id":"516755011","name":"M&S Gastropub Cottage Pie for One","price":6.5,"dealPrice":null,"size":"400g","kcal":564,"protein":40.4,"ocadoSlug":"m-s-gastropub-cottage-pie-for-one"},
+  {"id":"622292011","name":"M&S Gastropub Lamb Moussaka for One","price":6.5,"dealPrice":6.5,"size":"410g","kcal":554,"protein":28.3,"ocadoSlug":"m-s-gastropub-lamb-moussaka-for-one"},
+  {"id":"516783011","name":"M&S Gastropub Shepherd's Pie for One","price":6.5,"dealPrice":null,"size":"415g","kcal":496,"protein":29.2,"ocadoSlug":"m-s-gastropub-shepherd-s-pie-for-one"},
+  {"id":"514884011","name":"M&S Ham & Mushroom Tagliatelle Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":516,"protein":29.6,"ocadoSlug":"m-s-ham-mushroom-tagliatelle-serves-1"},
+  {"id":"649111011","name":"M&S High Protein Buffalo Chicken","price":6.0,"dealPrice":null,"size":"370g","kcal":444,"protein":35.5,"ocadoSlug":"m-s-high-protein-buffalo-chicken"},
+  {"id":"649128011","name":"M&S High Protein Chicken & Mushroom Courgetti","price":6.0,"dealPrice":null,"size":"370g","kcal":274,"protein":34.0,"ocadoSlug":"m-s-high-protein-chicken-mushroom-courgetti"},
+  {"id":"679132011","name":"M&S High Protein Chicken Arrabbiata","price":6.0,"dealPrice":null,"size":"400g","kcal":432,"protein":44.0,"ocadoSlug":"m-s-high-protein-chicken-arrabbiata"},
+  {"id":"679134011","name":"M&S High Protein Chicken Tagine","price":6.0,"dealPrice":null,"size":"390g","kcal":425,"protein":38.2,"ocadoSlug":"m-s-high-protein-chicken-tagine"},
+  {"id":"649105011","name":"M&S High Protein Cod, Scallop & Prawn Linguine","price":6.0,"dealPrice":null,"size":"390g","kcal":296,"protein":30.8,"ocadoSlug":"m-s-high-protein-cod-scallop-prawn-linguine"},
+  {"id":"624281011","name":"M&S High Protein Pasta & Meatballs Box","price":6.0,"dealPrice":6.0,"size":"400g","kcal":472,"protein":40.4,"ocadoSlug":"m-s-high-protein-pasta-meatballs-box"},
+  {"id":"645793011","name":"M&S King Prawn Chettinad Curry with Basmati Rice","price":4.3,"dealPrice":null,"size":"400g","kcal":620,"protein":24.8,"ocadoSlug":"m-s-king-prawn-chettinad-curry-with-basmati-rice"},
+  {"id":"516556011","name":"M&S Lamb Hot Pot for One","price":5.5,"dealPrice":null,"size":"400g","kcal":344,"protein":29.2,"ocadoSlug":"m-s-lamb-hot-pot-for-one"},
+  {"id":"514829011","name":"M&S Macaroni Cheese Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":620,"protein":26.8,"ocadoSlug":"m-s-macaroni-cheese-serves-1"},
+  {"id":"671231011","name":"M&S Macaroni Cheese With Crispy Bacon Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":640,"protein":30.0,"ocadoSlug":"m-s-macaroni-cheese-with-crispy-bacon-serves-1"},
+  {"id":"516549011","name":"M&S Minced Lamb Hotpot Mini Meal","price":2.75,"dealPrice":null,"size":"200g","kcal":214,"protein":14.8,"ocadoSlug":"m-s-minced-lamb-hotpot-mini-meal"},
+  {"id":"514651011","name":"M&S Mushroom Pappardelle Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":620,"protein":20.0,"ocadoSlug":"m-s-mushroom-pappardelle-serves-1"},
+  {"id":"679136011","name":"M&S Nutrient Dense Romesco Chicken","price":7.0,"dealPrice":null,"size":"400g","kcal":460,"protein":35.2,"ocadoSlug":"m-s-nutrient-dense-romesco-chicken"},
+  {"id":"679241011","name":"M&S Nutrient Dense Satay Chicken, Black Rice & Mango","price":5.75,"dealPrice":null,"size":"290g","kcal":339,"protein":22.3,"ocadoSlug":"m-s-nutrient-dense-satay-chicken-black-rice-mango"},
+  {"id":"679130011","name":"M&S Nutrient Dense Tandoori Chicken","price":7.0,"dealPrice":null,"size":"400g","kcal":344,"protein":42.0,"ocadoSlug":"m-s-nutrient-dense-tandoori-chicken"},
+  {"id":"645781011","name":"M&S Our Best Ever Chicken Tikka Masala & Rice","price":5.5,"dealPrice":null,"size":"400g","kcal":632,"protein":32.8,"ocadoSlug":"m-s-our-best-ever-chicken-tikka-masala-rice"},
+  {"id":"572265011","name":"M&S Pepperoni Stonebaked Pizza","price":2.9,"dealPrice":null,"size":"250g","kcal":698,"protein":29.5,"ocadoSlug":"m-s-pepperoni-stonebaked-pizza"},
+  {"id":"516611011","name":"M&S Roast Beef Dinner Mini Meal","price":3.5,"dealPrice":null,"size":"250g","kcal":232,"protein":22.0,"ocadoSlug":"m-s-roast-beef-dinner-mini-meal"},
+  {"id":"516897011","name":"M&S Roast Chicken Dinner","price":5.0,"dealPrice":null,"size":"420g","kcal":466,"protein":37.8,"ocadoSlug":"m-s-roast-chicken-dinner"},
+  {"id":"516686011","name":"M&S Roast Chicken Dinner Mini Meal","price":3.5,"dealPrice":null,"size":"270g","kcal":300,"protein":23.5,"ocadoSlug":"m-s-roast-chicken-dinner-mini-meal"},
+  {"id":"514555011","name":"M&S Sausage Ragu Rigatoni Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":636,"protein":25.6,"ocadoSlug":"m-s-sausage-ragu-rigatoni-serves-1"},
+  {"id":"516618011","name":"M&S Shepherd's Pie","price":4.0,"dealPrice":null,"size":"400g","kcal":456,"protein":24.8,"ocadoSlug":"m-s-shepherd-s-pie"},
+  {"id":"511281011","name":"M&S Singapore Noodles","price":5.4,"dealPrice":null,"size":"400g","kcal":504,"protein":22.4,"ocadoSlug":"m-s-singapore-noodles"},
+  {"id":"514206011","name":"M&S Smoked Ham & Cheese Woodfired & Stonebaked Pizza","price":6.0,"dealPrice":null,"size":"433g","kcal":511,"protein":25.3,"ocadoSlug":"m-s-smoked-ham-cheese-woodfired-stonebaked-pizza"},
+  {"id":"514640011","name":"M&S Spaghetti Bolognese Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":624,"protein":27.6,"ocadoSlug":"m-s-spaghetti-bolognese-serves-1"},
+  {"id":"514495011","name":"M&S Spaghetti Carbonara Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":556,"protein":28.0,"ocadoSlug":"m-s-spaghetti-carbonara-serves-1"},
+  {"id":"679803011","name":"M&S Spaghetti Puttanesca","price":4.0,"dealPrice":null,"size":"400g","kcal":468,"protein":11.6,"ocadoSlug":"m-s-spaghetti-puttanesca"},
+  {"id":"671248011","name":"M&S Spicy Meat Feast Pasta Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":536,"protein":24.0,"ocadoSlug":"m-s-spicy-meat-feast-pasta-serves-1"},
+  {"id":"515863011","name":"M&S Taste Buds Cheese & Tomato Pasta","price":3.5,"dealPrice":null,"size":"225g","kcal":270,"protein":10.4,"ocadoSlug":"m-s-taste-buds-cheese-tomato-pasta"},
+  {"id":"562538011","name":"M&S The American Pepperoni Woodfired & Stonebaked Pizza","price":3.75,"dealPrice":null,"size":"255g","kcal":676,"protein":28.6,"ocadoSlug":"m-s-the-american-pepperoni-woodfired-stonebaked-pizza"},
+  {"id":"518722011","name":"M&S Three Cheese Ravioli Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":632,"protein":25.2,"ocadoSlug":"m-s-three-cheese-ravioli-serves-1"},
+  {"id":"518982011","name":"M&S Tomato & Basil Spaghetti Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":452,"protein":14.8,"ocadoSlug":"m-s-tomato-basil-spaghetti-serves-1"},
+  {"id":"609129011","name":"M&S Tomato & Mozzarella Pasta Bake Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":608,"protein":22.0,"ocadoSlug":"m-s-tomato-mozzarella-pasta-bake-serves-1"},
+  {"id":"562372011","name":"M&S Tuna Pasta Bake","price":4.0,"dealPrice":3.33,"size":"400g","kcal":592,"protein":38.8,"ocadoSlug":"m-s-tuna-pasta-bake"},
+  {"id":"516623011","name":"M&S Buttery Mash Potato","price":3.0,"dealPrice":3.0,"size":"450g","kcal":536,"protein":11.2,"ocadoSlug":"m-s-buttery-mash-potato"},
+  {"id":"516766011","name":"M&S Gastropub Triple Cooked Chips in Beef Dripping Side","price":4.0,"dealPrice":4.0,"size":"450g","kcal":774,"protein":8.1,"ocadoSlug":"m-s-gastropub-triple-cooked-chips-in-beef-dripping-side"},
+  {"id":"554157011","name":"M&S Super Nutty Wholefood Salad","price":3.0,"dealPrice":2.5,"size":"200g","kcal":358,"protein":14.8,"ocadoSlug":"m-s-super-nutty-wholefood-salad"},
+  {"id":"514632011","name":"M&S Spaghetti & Meatballs in a Tomato Sauce Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":536,"protein":24.0,"ocadoSlug":"m-s-spaghetti-meatballs-in-a-tomato-sauce-serves-1"},
+  {"id":"516576011","name":"M&S Fries","price":2.75,"dealPrice":2.75,"size":"225g","kcal":389,"protein":7.2,"ocadoSlug":"m-s-fries"},
+  {"id":"516329011","name":"M&S Parmentier Potatoes","price":2.8,"dealPrice":2.8,"size":"400g","kcal":536,"protein":8.8,"ocadoSlug":"m-s-parmentier-potatoes"},
+  {"id":"575885011","name":"M&S Gastropub Maris Piper Mashed Potato Side","price":3.75,"dealPrice":3.75,"size":"450g","kcal":796,"protein":6.8,"ocadoSlug":"m-s-gastropub-maris-piper-mashed-potato-side"},
+  {"id":"554161011","name":"M&S Roasted Vegetable Couscous","price":3.0,"dealPrice":2.5,"size":"200g","kcal":298,"protein":9.6,"ocadoSlug":"m-s-roasted-vegetable-couscous"},
+  {"id":"554159011","name":"M&S Super Green Salad","price":3.0,"dealPrice":2.5,"size":"190g","kcal":125,"protein":7.4,"ocadoSlug":"m-s-super-green-salad"},
+  {"id":"617889011","name":"M&S Gastropub Tenderstem Broccoli Petit Pois & Cavolo Nero Side","price":3.75,"dealPrice":3.75,"size":"220g","kcal":191,"protein":10.1,"ocadoSlug":"m-s-gastropub-tenderstem-broccoli-petit-pois-cavolo-nero-side"},
+  {"id":"554160011","name":"M&S Orzo & Slow Roasted Tomatoes","price":3.0,"dealPrice":2.5,"size":"200g","kcal":276,"protein":8.2,"ocadoSlug":"m-s-orzo-slow-roasted-tomatoes"},
+  {"id":"514828011","name":"M&S Spinach & Ricotta Cannelloni Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":480,"protein":18.0,"ocadoSlug":"m-s-spinach-ricotta-cannelloni-serves-1"},
+  {"id":"554162011","name":"M&S Four Bean Salad","price":3.0,"dealPrice":2.5,"size":"240g","kcal":334,"protein":16.1,"ocadoSlug":"m-s-four-bean-salad"},
+  {"id":"523727011","name":"M&S Herby Minted Baby Potatoes","price":2.5,"dealPrice":2.5,"size":"385g","kcal":262,"protein":5.8,"ocadoSlug":"m-s-herby-minted-baby-potatoes"},
+  {"id":"513884011","name":"M&S Pilau Rice","price":2.1,"dealPrice":2.1,"size":"300g","kcal":468,"protein":9.6,"ocadoSlug":"m-s-pilau-rice"},
+  {"id":"514532011","name":"M&S 4 Onion Bhajis","price":2.75,"dealPrice":2.75,"size":"168g","kcal":376,"protein":10.4,"ocadoSlug":"m-s-4-onion-bhajis"},
+  {"id":"575638011","name":"M&S Gastropub Battered Fish & Peas Main for Two","price":12.0,"dealPrice":12.0,"size":"640g","kcal":1158,"protein":60.8,"ocadoSlug":"m-s-gastropub-battered-fish-peas-main-for-two"},
+  {"id":"519036011","name":"M&S Gastropub Tarte Au Citron Dessert","price":5.0,"dealPrice":5.0,"size":"2 x 70g","kcal":571,"protein":5.5,"ocadoSlug":"m-s-gastropub-tarte-au-citron-dessert"},
+  {"id":"518347011","name":"M&S Chunky Chips","price":2.8,"dealPrice":2.8,"size":"400g","kcal":476,"protein":8.4,"ocadoSlug":"m-s-chunky-chips"},
+  {"id":"642809011","name":"M&S Gastropub Beef Lasagne","price":10.5,"dealPrice":10.5,"size":"800g","kcal":1424,"protein":96.8,"ocadoSlug":"m-s-gastropub-beef-lasagne"},
+  {"id":"516856011","name":"M&S Gastropub 2 Scotch Eggs Starter","price":4.75,"dealPrice":4.75,"size":"254g","kcal":676,"protein":27.7,"ocadoSlug":"m-s-gastropub-2-scotch-eggs-starter"},
+  {"id":"573340011","name":"M&S Gastropub Chicken Parmigiana Main for Two","price":9.5,"dealPrice":9.5,"size":"460g","kcal":1007,"protein":61.2,"ocadoSlug":"m-s-gastropub-chicken-parmigiana-main-for-two"},
+  {"id":"514649011","name":"M&S Indian Starter Selection","price":4.0,"dealPrice":4.0,"size":"300g","kcal":651,"protein":19.2,"ocadoSlug":"m-s-indian-starter-selection"},
+  {"id":"514458011","name":"M&S Roasted Vegetable Lasagne Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":460,"protein":14.8,"ocadoSlug":"m-s-roasted-vegetable-lasagne-serves-1"},
+  {"id":"514848011","name":"M&S 4 Hand Wrapped Vegetable Samosas","price":2.75,"dealPrice":2.75,"size":"208g","kcal":495,"protein":11.2,"ocadoSlug":"m-s-4-hand-wrapped-vegetable-samosas"},
+  {"id":"574895011","name":"M&S Gastropub Chicken Forestiere Main for Two","price":12.0,"dealPrice":12.0,"size":"585g","kcal":842,"protein":84.8,"ocadoSlug":"m-s-gastropub-chicken-forestiere-main-for-two"},
+  {"id":"516367011","name":"M&S Garlic Stuffed Mushrooms","price":3.5,"dealPrice":3.5,"size":"200g","kcal":210,"protein":9.0,"ocadoSlug":"m-s-garlic-stuffed-mushrooms"},
+  {"id":"514167011","name":"M&S Saag Aloo","price":2.5,"dealPrice":2.5,"size":"250g","kcal":295,"protein":5.2,"ocadoSlug":"m-s-saag-aloo"},
+  {"id":"516780011","name":"M&S Cabbage Medley","price":3.5,"dealPrice":3.5,"size":"300g","kcal":120,"protein":6.0,"ocadoSlug":"m-s-cabbage-medley"},
+  {"id":"671236011","name":"M&S Roasted Mushroom Risotto Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":484,"protein":12.4,"ocadoSlug":"m-s-roasted-mushroom-risotto-serves-1"},
+  {"id":"574936011","name":"M&S Gastropub Mac & Cheese Croquettes","price":5.5,"dealPrice":5.5,"size":"220g","kcal":576,"protein":20.0,"ocadoSlug":"m-s-gastropub-mac-cheese-croquettes"},
+  {"id":"516693011","name":"M&S Gastropub Cottage Pie Main for Two","price":10.5,"dealPrice":10.5,"size":"800g","kcal":1048,"protein":78.4,"ocadoSlug":"m-s-gastropub-cottage-pie-main-for-two"},
+  {"id":"605864011","name":"M&S Gastropub Lamb Moussaka Main for Two","price":10.0,"dealPrice":10.0,"size":"800g","kcal":1168,"protein":54.4,"ocadoSlug":"m-s-gastropub-lamb-moussaka-main-for-two"},
+  {"id":"514753011","name":"M&S 2 Large Garlic & Coriander Naans","price":2.6,"dealPrice":2.6,"size":"260g","kcal":705,"protein":19.8,"ocadoSlug":"m-s-2-large-garlic-coriander-naans"},
+  {"id":"516765011","name":"M&S Sweet Potato Fries","price":3.5,"dealPrice":3.5,"size":"300g","kcal":489,"protein":3.6,"ocadoSlug":"m-s-sweet-potato-fries"},
+  {"id":"514020011","name":"M&S King Prawn Bhuna","price":6.0,"dealPrice":6.0,"size":"400g","kcal":368,"protein":28.0,"ocadoSlug":"m-s-king-prawn-bhuna"},
+  {"id":"516788011","name":"M&S Peas & Carrots with Mint Butter","price":3.5,"dealPrice":3.5,"size":"300g","kcal":222,"protein":9.9,"ocadoSlug":"m-s-peas-carrots-with-mint-butter"},
+  {"id":"513894011","name":"M&S Lamb Rogan Josh","price":6.25,"dealPrice":6.25,"size":"400g","kcal":484,"protein":46.0,"ocadoSlug":"m-s-lamb-rogan-josh"},
+  {"id":"645777011","name":"M&S Tamarind Dal","price":2.4,"dealPrice":2.4,"size":"250g","kcal":418,"protein":16.5,"ocadoSlug":"m-s-tamarind-dal"},
+  {"id":"513892011","name":"M&S Bombay Aloo","price":2.5,"dealPrice":2.5,"size":"250g","kcal":288,"protein":4.8,"ocadoSlug":"m-s-bombay-aloo"},
+  {"id":"514197011","name":"M&S Chicken Jalfrezi","price":5.5,"dealPrice":5.5,"size":"400g","kcal":544,"protein":51.2,"ocadoSlug":"m-s-chicken-jalfrezi"},
+  {"id":"562054011","name":"M&S Gastropub Greens Side","price":3.75,"dealPrice":3.75,"size":"210g","kcal":170,"protein":8.0,"ocadoSlug":"m-s-gastropub-greens-side"},
+  {"id":"514129011","name":"M&S Chicken Korma","price":5.5,"dealPrice":5.5,"size":"400g","kcal":612,"protein":56.4,"ocadoSlug":"m-s-chicken-korma"},
+  {"id":"514130011","name":"M&S Chicken Madras","price":5.5,"dealPrice":5.5,"size":"400g","kcal":560,"protein":54.4,"ocadoSlug":"m-s-chicken-madras"},
+  {"id":"671235011","name":"M&S Pasta Alla Vodka Serves 1","price":4.0,"dealPrice":3.33,"size":"400g","kcal":516,"protein":17.2,"ocadoSlug":"m-s-pasta-alla-vodka-serves-1"},
+  {"id":"632842011","name":"M&S Crispy Potato Waffle Fries","price":3.5,"dealPrice":3.5,"size":"300g","kcal":528,"protein":8.1,"ocadoSlug":"m-s-crispy-potato-waffle-fries"},
+  {"id":"513908011","name":"M&S Chicken Balti Curry","price":5.5,"dealPrice":5.5,"size":"400g","kcal":496,"protein":48.8,"ocadoSlug":"m-s-chicken-balti-curry"},
+  {"id":"514752011","name":"M&S 2 Tandoori Naans","price":2.6,"dealPrice":2.6,"size":"130g","kcal":338,"protein":10.0,"ocadoSlug":"m-s-2-tandoori-naans"},
+  {"id":"572548011","name":"M&S Plant Kitchen Vegetable Tikka Masala Curry","price":5.5,"dealPrice":5.5,"size":"400g","kcal":396,"protein":6.8,"ocadoSlug":"m-s-plant-kitchen-vegetable-tikka-masala-curry"},
+  {"id":"673037011","name":"M&S Chicken Dhansak","price":5.5,"dealPrice":5.5,"size":"400g","kcal":532,"protein":54.8,"ocadoSlug":"m-s-chicken-dhansak"},
+  {"id":"672770011","name":"M&S 4 Spiced Rotis","price":2.5,"dealPrice":2.5,"size":"4 x 55g","kcal":715,"protein":16.9,"ocadoSlug":"m-s-4-spiced-rotis"},
+  {"id":"679801011","name":"M&S Chicken Saag","price":5.5,"dealPrice":5.5,"size":"400g","kcal":484,"protein":43.6,"ocadoSlug":"m-s-chicken-saag"},
+  {"id":"514128011","name":"M&S Basmati Rice","price":2.1,"dealPrice":2.1,"size":"300g","kcal":405,"protein":9.3,"ocadoSlug":"m-s-basmati-rice"},
+  {"id":"520062011","name":"M&S Mashed Potato","price":1.25,"dealPrice":1.25,"size":"450g","kcal":400,"protein":5.8,"ocadoSlug":"m-s-mashed-potato"},
+  {"id":"516843011","name":"M&S Cauliflower Cheese with Mature Cheddar Cheese","price":3.75,"dealPrice":3.75,"size":"450g","kcal":477,"protein":28.8,"ocadoSlug":"m-s-cauliflower-cheese-with-mature-cheddar-cheese"},
+  {"id":"516816011","name":"M&S 6 Yorkshire Puddings","price":2.0,"dealPrice":2.0,"size":"132g","kcal":359,"protein":13.6,"ocadoSlug":"m-s-6-yorkshire-puddings"},
+  {"id":"562539011","name":"M&S Classic Margherita Woodfired & Stonebaked Pizza","price":3.75,"dealPrice":3.75,"size":"243g","kcal":615,"protein":27.2,"ocadoSlug":"m-s-classic-margherita-woodfired-stonebaked-pizza"},
+  {"id":"516617011","name":"M&S 4 Yorkshire Puddings","price":2.0,"dealPrice":2.0,"size":"120g","kcal":342,"protein":11.0,"ocadoSlug":"m-s-4-yorkshire-puddings"},
+  {"id":"516842011","name":"M&S Cauliflower Cheese with Mature Cheddar Cheese","price":2.8,"dealPrice":2.8,"size":"300g","kcal":318,"protein":19.2,"ocadoSlug":"m-s-cauliflower-cheese-with-mature-cheddar-cheese"},
+  {"id":"516528011","name":"M&S Bangers & Mash with Onion Gravy","price":4.0,"dealPrice":4.0,"size":"430g","kcal":477,"protein":19.8,"ocadoSlug":"m-s-bangers-mash-with-onion-gravy"},
+  {"id":"515001011","name":"M&S Our Best Ever Rich Beef Lasagne Serves 2","price":10.0,"dealPrice":10.0,"size":"800g","kcal":1296,"protein":85.6,"ocadoSlug":"m-s-our-best-ever-rich-beef-lasagne-serves-2"},
+  {"id":"516865011","name":"M&S Buttery Mash Potato","price":2.75,"dealPrice":2.75,"size":"225g","kcal":268,"protein":5.6,"ocadoSlug":"m-s-buttery-mash-potato"},
+  {"id":"516375011","name":" M&S Steak Casserole with Dumplings & Gravy","price":4.75,"dealPrice":4.75,"size":"450g","kcal":572,"protein":39.1,"ocadoSlug":"m-s-steak-casserole-with-dumplings-gravy"},
+  {"id":"513878011","name":"M&S 6 Vegetable Spring Rolls","price":3.1,"dealPrice":3.1,"size":"215g","kcal":434,"protein":6.7,"ocadoSlug":"m-s-6-vegetable-spring-rolls"},
+  {"id":"516312011","name":"M&S Gastropub 2 Chicken Kyivs Main for Two","price":10.0,"dealPrice":10.0,"size":"450g","kcal":927,"protein":75.2,"ocadoSlug":"m-s-gastropub-2-chicken-kyivs-main-for-two"},
+  {"id":"513846011","name":"M&S Mozzarella Sticks","price":4.0,"dealPrice":4.0,"size":"150g","kcal":462,"protein":21.6,"ocadoSlug":"m-s-mozzarella-sticks"},
+  {"id":"513889011","name":"M&S Cheesy Jacket Potatoes","price":3.5,"dealPrice":3.5,"size":"2 per pack","kcal":null,"protein":null,"ocadoSlug":"m-s-cheesy-jacket-potatoes"},
+  {"id":"516793011","name":"M&S Roast Pork in Apple & Cider Gravy","price":5.5,"dealPrice":5.5,"size":"390g","kcal":417,"protein":27.7,"ocadoSlug":"m-s-roast-pork-in-apple-cider-gravy"},
+  {"id":"513909011","name":"M&S 6 Duck Spring Rolls","price":4.0,"dealPrice":4.0,"size":"215g","kcal":527,"protein":18.1,"ocadoSlug":"m-s-6-duck-spring-rolls"},
+  {"id":"514143011","name":"M&S Special Fried Rice","price":4.0,"dealPrice":4.0,"size":"400g","kcal":788,"protein":26.8,"ocadoSlug":"m-s-special-fried-rice"},
+  {"id":"516879011","name":"M&S Lamb with Redcurrant Gravy & Mash","price":5.25,"dealPrice":5.25,"size":"380g","kcal":346,"protein":25.1,"ocadoSlug":"m-s-lamb-with-redcurrant-gravy-mash"},
+  {"id":"516624011","name":"M&S Toad In The Hole Meal to Share","price":4.0,"dealPrice":4.0,"size":"350g","kcal":1138,"protein":40.2,"ocadoSlug":"m-s-toad-in-the-hole-meal-to-share"},
+  {"id":"514890011","name":"M&S Salt & Pepper Chicken","price":3.5,"dealPrice":3.5,"size":"144g","kcal":336,"protein":27.1,"ocadoSlug":"m-s-salt-pepper-chicken"},
+  {"id":"516882011","name":"M&S Chicken Breast in Cheese & Ham Sauce","price":5.5,"dealPrice":5.5,"size":"400g","kcal":552,"protein":38.4,"ocadoSlug":"m-s-chicken-breast-in-cheese-ham-sauce"},
+  {"id":"516578011","name":"M&S Carrot & Swede Potato Mash","price":2.8,"dealPrice":2.8,"size":"450g","kcal":297,"protein":6.3,"ocadoSlug":"m-s-carrot-swede-potato-mash"},
+  {"id":"513847011","name":"M&S Crispy Mac & Cheese Bites","price":4.25,"dealPrice":4.25,"size":"200g","kcal":496,"protein":16.2,"ocadoSlug":"m-s-crispy-mac-cheese-bites"},
+  {"id":"516757011","name":"M&S 4 Potato Rosti Cakes","price":2.2,"dealPrice":2.2,"size":"300g","kcal":450,"protein":3.0,"ocadoSlug":"m-s-4-potato-rosti-cakes"},
+  {"id":"516797011","name":"M&S Chicken & Broccoli Pie","price":4.25,"dealPrice":4.25,"size":"400g","kcal":460,"protein":38.4,"ocadoSlug":"m-s-chicken-broccoli-pie"},
+  {"id":"516839011","name":"M&S Collections Potato Gratin Dauphinoise","price":4.0,"dealPrice":4.0,"size":"450g","kcal":590,"protein":16.2,"ocadoSlug":"m-s-collections-potato-gratin-dauphinoise"},
+  {"id":"514074011","name":"M&S Sweet & Sour Chicken","price":5.5,"dealPrice":5.5,"size":"420g","kcal":739,"protein":36.1,"ocadoSlug":"m-s-sweet-sour-chicken"},
+  {"id":"516767011","name":"M&S Collections Ultimate Roast Potatoes with Goose Fat","price":4.0,"dealPrice":4.0,"size":"450g","kcal":495,"protein":7.2,"ocadoSlug":"m-s-collections-ultimate-roast-potatoes-with-goose-fat"},
+  {"id":"516670011","name":"M&S Cottage Pie Mini Meal","price":2.75,"dealPrice":2.75,"size":"200g","kcal":198,"protein":10.6,"ocadoSlug":"m-s-cottage-pie-mini-meal"},
+  {"id":"513885011","name":"M&S Egg Fried Rice","price":2.1,"dealPrice":2.1,"size":"300g","kcal":570,"protein":13.8,"ocadoSlug":"m-s-egg-fried-rice"},
+  {"id":"516385011","name":"M&S Braised Red Cabbage with Bramley Apple","price":3.3,"dealPrice":3.3,"size":"300g","kcal":186,"protein":3.6,"ocadoSlug":"m-s-braised-red-cabbage-with-bramley-apple"},
+  {"id":"514949011","name":"M&S Beef Lasagne Serves 4","price":9.5,"dealPrice":9.5,"size":"1.5kg","kcal":2475,"protein":115.5,"ocadoSlug":"m-s-beef-lasagne-serves-4"},
+  {"id":"516395011","name":"M&S 2 Cheddar Cheese & Onion Crispbakes","price":2.5,"dealPrice":2.5,"size":"227g","kcal":586,"protein":13.8,"ocadoSlug":"m-s-2-cheddar-cheese-onion-crispbakes"},
+  {"id":"516638011","name":"M&S Shepherds Pie Mini Meal","price":2.75,"dealPrice":2.75,"size":"200g","kcal":222,"protein":14.0,"ocadoSlug":"m-s-shepherds-pie-mini-meal"},
+  {"id":"516685011","name":"M&S Chicken Filled Giant Yorkshire Pudding","price":6.0,"dealPrice":6.0,"size":"365g","kcal":715,"protein":37.2,"ocadoSlug":"m-s-chicken-filled-giant-yorkshire-pudding"},
+  {"id":"516648011","name":"M&S Roast Lamb Dinner Mini Meal","price":3.5,"dealPrice":3.5,"size":"250g","kcal":240,"protein":21.8,"ocadoSlug":"m-s-roast-lamb-dinner-mini-meal"},
+  {"id":"513886011","name":"M&S Cod in Parsley Sauce with Mash, Peas & Carrots","price":4.75,"dealPrice":4.75,"size":"400g","kcal":260,"protein":23.2,"ocadoSlug":"m-s-cod-in-parsley-sauce-with-mash-peas-carrots"},
+  {"id":"516553011","name":"M&S Braised Steak & Mash with Onion Gravy","price":4.75,"dealPrice":4.75,"size":"450g","kcal":360,"protein":28.4,"ocadoSlug":"m-s-braised-steak-mash-with-onion-gravy"},
+  {"id":"516672011","name":"M&S Chicken Casserole with Dumplings","price":4.5,"dealPrice":4.5,"size":"450g","kcal":612,"protein":45.9,"ocadoSlug":"m-s-chicken-casserole-with-dumplings"},
+  {"id":"516536011","name":"M&S Colcannon Potato Mash","price":3.0,"dealPrice":3.0,"size":"450g","kcal":472,"protein":6.8,"ocadoSlug":"m-s-colcannon-potato-mash"},
+  {"id":"516610011","name":"M&S Roast Beef Filled Giant Yorkshire Pudding Meal","price":6.0,"dealPrice":6.0,"size":"330g","kcal":571,"protein":38.0,"ocadoSlug":"m-s-roast-beef-filled-giant-yorkshire-pudding-meal"},
+  {"id":"514627011","name":"M&S Made In Italy Ricotta & Spinach Ravioli","price":3.75,"dealPrice":3.75,"size":"250g","kcal":485,"protein":16.5,"ocadoSlug":"m-s-made-in-italy-ricotta-spinach-ravioli"},
+  {"id":"515873011","name":"M&S Count On Us Roast Pork Loin in Gravy","price":4.5,"dealPrice":4.5,"size":"360g","kcal":274,"protein":27.4,"ocadoSlug":"m-s-count-on-us-roast-pork-loin-in-gravy"},
+  {"id":"516894011","name":"M&S Cod Fillet in Parsley Sauce Mini Meal","price":2.75,"dealPrice":2.75,"size":"250g","kcal":200,"protein":17.8,"ocadoSlug":"m-s-cod-fillet-in-parsley-sauce-mini-meal"},
+  {"id":"515161011","name":"M&S Taste Buds Breaded Chicken Teddies","price":3.5,"dealPrice":3.5,"size":"180g","kcal":392,"protein":24.8,"ocadoSlug":"m-s-taste-buds-breaded-chicken-teddies"},
+  {"id":"528869011","name":"M&S Lamb Hotpot","price":4.75,"dealPrice":4.75,"size":"450g","kcal":504,"protein":25.6,"ocadoSlug":"m-s-lamb-hotpot"},
+  {"id":"516855011","name":"M&S Fish Pie Mini Meal","price":2.75,"dealPrice":2.75,"size":"220g","kcal":180,"protein":13.2,"ocadoSlug":"m-s-fish-pie-mini-meal"},
+  {"id":"516640011","name":"M&S Carrot & Swede Crush","price":3.5,"dealPrice":3.5,"size":"300g","kcal":213,"protein":2.1,"ocadoSlug":"m-s-carrot-swede-crush"},
+  {"id":"514974011","name":"M&S Our Best Ever Chicken Tikka Masala","price":6.5,"dealPrice":6.5,"size":"460g","kcal":727,"protein":62.1,"ocadoSlug":"m-s-our-best-ever-chicken-tikka-masala"},
+  {"id":"562540011","name":"M&S Ham, Cheese & Mushroom Woodfired & Stonebaked Pizza","price":3.9,"dealPrice":3.9,"size":"285g","kcal":613,"protein":30.5,"ocadoSlug":"m-s-ham-cheese-mushroom-woodfired-stonebaked-pizza"},
+  {"id":"516577011","name":"M&S Cheddar Cheese Potato Mash","price":3.0,"dealPrice":3.0,"size":"450g","kcal":526,"protein":15.8,"ocadoSlug":"m-s-cheddar-cheese-potato-mash"},
+  {"id":"516695011","name":"M&S Fish & Chips","price":4.75,"dealPrice":4.75,"size":"310g","kcal":521,"protein":18.9,"ocadoSlug":"m-s-fish-chips"},
+  {"id":"516575011","name":"M&S Liver & Bacon with Mash & Gravy","price":4.25,"dealPrice":4.25,"size":"450g","kcal":436,"protein":25.6,"ocadoSlug":"m-s-liver-bacon-with-mash-gravy"},
+  {"id":"516846011","name":"M&S Green Vegetable Medley with Lemon & Herb Butter","price":3.2,"dealPrice":3.2,"size":"300g","kcal":204,"protein":9.6,"ocadoSlug":"m-s-green-vegetable-medley-with-lemon-herb-butter"},
+  {"id":"515164011","name":"M&S Count On Us Braised Steak with Root Vegetable Crush","price":4.5,"dealPrice":4.5,"size":"380g","kcal":274,"protein":25.8,"ocadoSlug":"m-s-count-on-us-braised-steak-with-root-vegetable-crush"},
+  {"id":"515988011","name":"M&S Count On Us Chicken in Creamy Mushroom Sauce","price":4.5,"dealPrice":4.5,"size":"370g","kcal":274,"protein":28.9,"ocadoSlug":"m-s-count-on-us-chicken-in-creamy-mushroom-sauce"},
+  {"id":"516637011","name":"M&S Smoked Haddock in Cheese Sauce","price":4.75,"dealPrice":4.75,"size":"400g","kcal":364,"protein":25.6,"ocadoSlug":"m-s-smoked-haddock-in-cheese-sauce"},
+  {"id":"514144011","name":"M&S Mini Spare Ribs","price":5.75,"dealPrice":5.75,"size":"300g","kcal":687,"protein":47.4,"ocadoSlug":"m-s-mini-spare-ribs"},
+  {"id":"514476011","name":"M&S Very Veggie Woodfired & Stonebaked Pizza ","price":6.0,"dealPrice":6.0,"size":"477g","kcal":1035,"protein":43.9,"ocadoSlug":"m-s-very-veggie-woodfired-stonebaked-pizza"},
+  {"id":"516892011","name":"M&S Bangers & Mash Mini Meal","price":2.75,"dealPrice":2.75,"size":"250g","kcal":288,"protein":11.2,"ocadoSlug":"m-s-bangers-mash-mini-meal"},
+  {"id":"516796011","name":"M&S 6 Cheddar Cheese Croquettes","price":3.5,"dealPrice":3.5,"size":"250g","kcal":null,"protein":21.0,"ocadoSlug":"m-s-6-cheddar-cheese-croquettes"},
+  {"id":"513893011","name":"M&S Crispy Lemon Chicken","price":5.5,"dealPrice":5.5,"size":"340g","kcal":666,"protein":34.7,"ocadoSlug":"m-s-crispy-lemon-chicken"},
+  {"id":"516519011","name":"M&S Roast Beef Dinner with Yorkshire Pudding","price":5.0,"dealPrice":5.0,"size":"390g","kcal":421,"protein":35.5,"ocadoSlug":"m-s-roast-beef-dinner-with-yorkshire-pudding"},
+  {"id":"516552011","name":"M&S Steak & Mash Mini Meal","price":2.75,"dealPrice":2.75,"size":"220g","kcal":178,"protein":12.8,"ocadoSlug":"m-s-steak-mash-mini-meal"},
+  {"id":"516565011","name":"M&S Broccoli Cheese Bake","price":3.5,"dealPrice":3.5,"size":"400g","kcal":560,"protein":30.8,"ocadoSlug":"m-s-broccoli-cheese-bake"},
+  {"id":"516619011","name":"M&S Salmon in Watercress Sauce","price":5.75,"dealPrice":5.75,"size":"400g","kcal":428,"protein":28.0,"ocadoSlug":"m-s-salmon-in-watercress-sauce"},
+  {"id":"516339011","name":"M&S British Roasting Potatoes Basted in Butter","price":3.5,"dealPrice":3.5,"size":"450g","kcal":459,"protein":6.8,"ocadoSlug":"m-s-british-roasting-potatoes-basted-in-butter"},
+  {"id":"586723011","name":"M&S Our Best Ever Rich Beef Lasagne Serves 1","price":6.0,"dealPrice":6.0,"size":"400g","kcal":672,"protein":42.8,"ocadoSlug":"m-s-our-best-ever-rich-beef-lasagne-serves-1"},
+  {"id":"514149011","name":"M&S Battered Sweet & Sour Chicken","price":4.3,"dealPrice":4.3,"size":"400g","kcal":700,"protein":23.6,"ocadoSlug":"m-s-battered-sweet-sour-chicken"},
+  {"id":"513930011","name":"M&S Beef & Black Bean","price":5.5,"dealPrice":5.5,"size":"350g","kcal":357,"protein":32.6,"ocadoSlug":"m-s-beef-black-bean"},
+  {"id":"516841011","name":"M&S 6 Potato Croquettes","price":3.0,"dealPrice":3.0,"size":"250g","kcal":518,"protein":7.5,"ocadoSlug":"m-s-6-potato-croquettes"},
+  {"id":"544942011","name":"M&S Our Best Ever Five Cheese Macaroni Serves 1","price":6.0,"dealPrice":6.0,"size":"400g","kcal":824,"protein":30.8,"ocadoSlug":"m-s-our-best-ever-five-cheese-macaroni-serves-1"},
+  {"id":"514774011","name":"M&S Beef Lasagne Serves 2","price":6.25,"dealPrice":6.25,"size":"800g","kcal":1288,"protein":63.2,"ocadoSlug":"m-s-beef-lasagne-serves-2"},
+  {"id":"516355011","name":"M&S 2 Corned Beef Crispbakes","price":2.5,"dealPrice":2.5,"size":"227g","kcal":488,"protein":22.2,"ocadoSlug":"m-s-2-corned-beef-crispbakes"},
+  {"id":"514474011","name":"M&S 4 Sesame Prawn Toasts","price":3.0,"dealPrice":3.0,"size":"115g","kcal":378,"protein":13.8,"ocadoSlug":"m-s-4-sesame-prawn-toasts"},
+  {"id":"516386011","name":"M&S Beef Dumpling Casserole Mini Meal","price":2.75,"dealPrice":2.75,"size":"200g","kcal":260,"protein":15.0,"ocadoSlug":"m-s-beef-dumpling-casserole-mini-meal"},
+  {"id":"515045011","name":"M&S Count On Us Cottage Pie","price":4.25,"dealPrice":4.25,"size":"400g","kcal":336,"protein":26.8,"ocadoSlug":"m-s-count-on-us-cottage-pie"},
+  {"id":"516756011","name":"M&S Gastropub Fish Pie for One","price":7.0,"dealPrice":7.0,"size":"400g","kcal":416,"protein":31.6,"ocadoSlug":"m-s-gastropub-fish-pie-for-one"},
+  {"id":"638050011","name":"M&S Corned Beef Hash","price":4.25,"dealPrice":4.25,"size":"400g","kcal":448,"protein":32.8,"ocadoSlug":"m-s-corned-beef-hash"},
+  {"id":"515846011","name":"M&S Count On Us Beef Lasagne","price":4.25,"dealPrice":4.25,"size":"365g","kcal":328,"protein":22.3,"ocadoSlug":"m-s-count-on-us-beef-lasagne"},
+  {"id":"516845011","name":"M&S Creamed Spinach","price":3.2,"dealPrice":3.2,"size":"300g","kcal":285,"protein":9.3,"ocadoSlug":"m-s-creamed-spinach"},
+  {"id":"570352011","name":"M&S Full English Breakfast","price":4.0,"dealPrice":4.0,"size":"265g","kcal":379,"protein":23.3,"ocadoSlug":"m-s-full-english-breakfast"},
+  {"id":"515227011","name":"M&S Count On Us Chilli Con Carne & Rice","price":4.25,"dealPrice":4.25,"size":"390g","kcal":324,"protein":21.8,"ocadoSlug":"m-s-count-on-us-chilli-con-carne-rice"},
+  {"id":"514533011","name":"M&S Crispy Breaded Mushrooms","price":4.0,"dealPrice":4.0,"size":"200g","kcal":448,"protein":9.6,"ocadoSlug":"m-s-crispy-breaded-mushrooms"},
+  {"id":"514997011","name":"M&S Count On Us Beef Ragu","price":4.25,"dealPrice":4.25,"size":"360g","kcal":356,"protein":28.1,"ocadoSlug":"m-s-count-on-us-beef-ragu"},
+  {"id":"513956011","name":"M&S Shanghai Beef Udon Noodles","price":5.75,"dealPrice":5.75,"size":"400g","kcal":544,"protein":29.6,"ocadoSlug":"m-s-shanghai-beef-udon-noodles"},
+  {"id":"516373011","name":"M&S Cottage Pie with Cauliflower Cheese, Carrots & Peas","price":4.0,"dealPrice":4.0,"size":"440g","kcal":352,"protein":19.4,"ocadoSlug":"m-s-cottage-pie-with-cauliflower-cheese-carrots-peas"},
+  {"id":"671245011","name":"M&S King Prawn Linguine Serves 1","price":4.0,"dealPrice":4.0,"size":"400g","kcal":568,"protein":23.6,"ocadoSlug":"m-s-king-prawn-linguine-serves-1"},
+  {"id":"516840011","name":"M&S Veggie Pasta Bake","price":3.5,"dealPrice":3.5,"size":"350g","kcal":396,"protein":15.4,"ocadoSlug":"m-s-veggie-pasta-bake"},
+  {"id":"650154011","name":"M&S Count On Us Scottish Salmon & Watercress Sauce","price":5.25,"dealPrice":5.25,"size":"372g","kcal":350,"protein":27.9,"ocadoSlug":"m-s-count-on-us-scottish-salmon-watercress-sauce"},
+  {"id":"513919011","name":"M&S King Prawn Alfredo Serves 1","price":4.0,"dealPrice":4.0,"size":"400g","kcal":516,"protein":26.0,"ocadoSlug":"m-s-king-prawn-alfredo-serves-1"},
+  {"id":"516781011","name":"M&S Cauliflower Cheese Family Pack","price":7.0,"dealPrice":7.0,"size":"900g","kcal":954,"protein":57.6,"ocadoSlug":"m-s-cauliflower-cheese-family-pack"},
+  {"id":"514772011","name":"M&S Beef Bolognese Pasta Bake Serves 2","price":6.25,"dealPrice":6.25,"size":"800g","kcal":1440,"protein":68.8,"ocadoSlug":"m-s-beef-bolognese-pasta-bake-serves-2"},
+  {"id":"513933011","name":"M&S Sticky Chilli Chicken","price":5.5,"dealPrice":5.5,"size":"370g","kcal":718,"protein":34.4,"ocadoSlug":"m-s-sticky-chilli-chicken"},
+  {"id":"515232011","name":"M&S Taste Buds Spaghetti Bolognese","price":3.5,"dealPrice":3.5,"size":"225g","kcal":250,"protein":19.1,"ocadoSlug":"m-s-taste-buds-spaghetti-bolognese"},
+  {"id":"679131011","name":"M&S Nutrient Dense Satay Chicken","price":7.0,"dealPrice":7.0,"size":"400g","kcal":464,"protein":40.8,"ocadoSlug":"m-s-nutrient-dense-satay-chicken"},
+  {"id":"516605011","name":"M&S Cottage Pie Family Size","price":8.75,"dealPrice":8.75,"size":"1.2kg","kcal":1320,"protein":66.0,"ocadoSlug":"m-s-cottage-pie-family-size"},
+  {"id":"513966011","name":"M&S Chicken Korma with Basmati Rice","price":4.25,"dealPrice":4.25,"size":"400g","kcal":656,"protein":34.8,"ocadoSlug":"m-s-chicken-korma-with-basmati-rice"},
+  {"id":"513872011","name":"M&S Hoisin Duck Noodles","price":5.75,"dealPrice":5.75,"size":"350g","kcal":466,"protein":23.8,"ocadoSlug":"m-s-hoisin-duck-noodles"},
+  {"id":"518181011","name":"M&S Breaded Cod & Chips","price":4.75,"dealPrice":4.75,"size":"300g","kcal":519,"protein":20.7,"ocadoSlug":"m-s-breaded-cod-chips"},
+  {"id":"516667011","name":"M&S Roast Potatoes Family Pack","price":5.5,"dealPrice":5.5,"size":"800g","kcal":888,"protein":12.0,"ocadoSlug":"m-s-roast-potatoes-family-pack"},
+  {"id":"539034011","name":"M&S Our Best Ever Five Cheese Macaroni Serves 2","price":9.5,"dealPrice":9.5,"size":"750g","kcal":1500,"protein":59.2,"ocadoSlug":"m-s-our-best-ever-five-cheese-macaroni-serves-2"},
+  {"id":"516008011","name":"M&S Count On Us Cheese & Basil Ravioli","price":4.25,"dealPrice":4.25,"size":"335g","kcal":355,"protein":23.8,"ocadoSlug":"m-s-count-on-us-cheese-basil-ravioli"},
+  {"id":"514773011","name":"M&S Chicken Pasta Bake Serves 2","price":6.25,"dealPrice":6.25,"size":"800g","kcal":1208,"protein":76.8,"ocadoSlug":"m-s-chicken-pasta-bake-serves-2"},
+  {"id":"516352011","name":"M&S Battered Potato Slices","price":3.5,"dealPrice":3.5,"size":"350g","kcal":886,"protein":8.0,"ocadoSlug":"m-s-battered-potato-slices"},
+  {"id":"642278011","name":"M&S High Protein Naked Chicken Katsu Salad","price":5.75,"dealPrice":5.75,"size":"290g","kcal":322,"protein":26.1,"ocadoSlug":"m-s-high-protein-naked-chicken-katsu-salad"},
+  {"id":"575584011","name":"M&S Veggie Casserole with Dumplings","price":4.0,"dealPrice":4.0,"size":"450g","kcal":436,"protein":9.9,"ocadoSlug":"m-s-veggie-casserole-with-dumplings"},
+  {"id":"575600011","name":"M&S Veggie Cottage Pie","price":4.0,"dealPrice":4.0,"size":"400g","kcal":332,"protein":10.4,"ocadoSlug":"m-s-veggie-cottage-pie"},
+  {"id":"516844011","name":"M&S Cottage Pie Meal to Share","price":6.5,"dealPrice":6.5,"size":"800g","kcal":864,"protein":52.8,"ocadoSlug":"m-s-cottage-pie-meal-to-share"},
+  {"id":"545455011","name":"M&S Count On Us Chicken & Vegetable Chow Mein","price":4.5,"dealPrice":4.5,"size":"380g","kcal":296,"protein":25.1,"ocadoSlug":"m-s-count-on-us-chicken-vegetable-chow-mein"},
+  {"id":"671247011","name":"M&S Aubergine Al Forno Serves 1","price":4.0,"dealPrice":4.0,"size":"400g","kcal":528,"protein":14.8,"ocadoSlug":"m-s-aubergine-al-forno-serves-1"},
+  {"id":"514019011","name":"M&S 4 Bubble & Squeak Cakes","price":3.75,"dealPrice":3.75,"size":"4 per pack","kcal":null,"protein":null,"ocadoSlug":"m-s-4-bubble-squeak-cakes"},
+  {"id":"515874011","name":"M&S Count On Us Mini Chicken Fillets in Gravy","price":4.5,"dealPrice":4.5,"size":"400g","kcal":332,"protein":28.4,"ocadoSlug":"m-s-count-on-us-mini-chicken-fillets-in-gravy"},
+  {"id":"514467011","name":"M&S Chinese Favourites Takeaway Box","price":12.75,"dealPrice":12.75,"size":"1.37kg","kcal":1397,"protein":127.4,"ocadoSlug":"m-s-chinese-favourites-takeaway-box"},
+  {"id":"671233011","name":"M&S Chicken Pesto Pasta Serves 1","price":4.0,"dealPrice":4.0,"size":"400g","kcal":564,"protein":36.4,"ocadoSlug":"m-s-chicken-pesto-pasta-serves-1"},
+  {"id":"516893011","name":"M&S Chicken in Red Wine Sauce","price":4.25,"dealPrice":4.25,"size":"400g","kcal":336,"protein":34.0,"ocadoSlug":"m-s-chicken-in-red-wine-sauce"},
+  {"id":"515883011","name":"M&S Count on Us Cod Fillets with Potato & Pea Crush","price":4.5,"dealPrice":4.5,"size":"380g","kcal":296,"protein":28.9,"ocadoSlug":"m-s-count-on-us-cod-fillets-with-potato-pea-crush"},
+  {"id":"515939011","name":"M&S Count On Us Sausage & Mash","price":4.25,"dealPrice":4.25,"size":"400g","kcal":352,"protein":22.8,"ocadoSlug":"m-s-count-on-us-sausage-mash"},
+  {"id":"515057011","name":"M&S Made Without Wheat Beef Lasagne","price":4.5,"dealPrice":4.5,"size":"400g","kcal":652,"protein":29.6,"ocadoSlug":"m-s-made-without-wheat-beef-lasagne"},
+  {"id":"578249011","name":"M&S Herby Hasselback Potatoes","price":4.0,"dealPrice":4.0,"size":"750g","kcal":638,"protein":12.0,"ocadoSlug":"m-s-herby-hasselback-potatoes"},
+  {"id":"645779011","name":"M&S Collection Delhi Butter Chicken Curry","price":6.5,"dealPrice":6.5,"size":"460g","kcal":773,"protein":62.6,"ocadoSlug":"m-s-collection-delhi-butter-chicken-curry"},
+  {"id":"516503011","name":"M&S Potato & Vegetable Bake","price":3.5,"dealPrice":3.5,"size":"450g","kcal":297,"protein":7.7,"ocadoSlug":"m-s-potato-vegetable-bake"},
+  {"id":"516832011","name":"M&S Vegetable Selection with Mint Butter","price":3.2,"dealPrice":3.2,"size":"300g","kcal":243,"protein":4.5,"ocadoSlug":"m-s-vegetable-selection-with-mint-butter"},
+  {"id":"516621011","name":"M&S Gastropub Fish Pie Main for Two","price":12.0,"dealPrice":12.0,"size":"800g","kcal":888,"protein":62.4,"ocadoSlug":"m-s-gastropub-fish-pie-main-for-two"},
+  {"id":"515112011","name":"M&S Count On Us Spinach & Ricotta Cannelloni","price":4.25,"dealPrice":4.25,"size":"400g","kcal":360,"protein":18.4,"ocadoSlug":"m-s-count-on-us-spinach-ricotta-cannelloni"},
+  {"id":"604838011","name":"M&S Creamy Veg Curry with Rice","price":4.0,"dealPrice":4.0,"size":"400g","kcal":596,"protein":10.4,"ocadoSlug":"m-s-creamy-veg-curry-with-rice"},
+  {"id":"515058011","name":"M&S Made Without Wheat Gluten Free Spaghetti Bolognese","price":4.5,"dealPrice":4.5,"size":"400g","kcal":624,"protein":28.4,"ocadoSlug":"m-s-made-without-wheat-gluten-free-spaghetti-bolognese"},
+  {"id":"649108011","name":"M&S High Protein Beef Brisket & Smoky Tomato Beans","price":6.0,"dealPrice":6.0,"size":"380g","kcal":369,"protein":33.1,"ocadoSlug":"m-s-high-protein-beef-brisket-smoky-tomato-beans"},
+  {"id":"612706011","name":"M&S Count On Us Creamy Roasted Mushroom Tagliatelle","price":4.25,"dealPrice":4.25,"size":"330g","kcal":327,"protein":11.6,"ocadoSlug":"m-s-count-on-us-creamy-roasted-mushroom-tagliatelle"},
+  {"id":"671238011","name":"M&S Collection 6hr Slow Cooked Beef Shin Ragu Maniche Serves 1","price":6.0,"dealPrice":6.0,"size":"400g","kcal":588,"protein":39.2,"ocadoSlug":"m-s-collection-6hr-slow-cooked-beef-shin-ragu-maniche-serves-1"},
+  {"id":"515436011","name":"M&S Taste Buds Mighty Meaty Pasta","price":3.5,"dealPrice":3.5,"size":"225g","kcal":274,"protein":18.0,"ocadoSlug":"m-s-taste-buds-mighty-meaty-pasta"},
+  {"id":"528357011","name":"M&S Gastropub King Prawn Chicken & Chorizo Paella Main for Two","price":12.0,"dealPrice":12.0,"size":"800g","kcal":1320,"protein":80.8,"ocadoSlug":"m-s-gastropub-king-prawn-chicken-chorizo-paella-main-for-two"},
+  {"id":"513967011","name":"M&S Spicy Chicken Fajitas","price":6.25,"dealPrice":6.25,"size":"475g","kcal":765,"protein":42.8,"ocadoSlug":"m-s-spicy-chicken-fajitas"},
+  {"id":"513964011","name":"M&S Indian Dip Selection","price":2.5,"dealPrice":2.5,"size":"3 x 50g","kcal":194,"protein":5.4,"ocadoSlug":"m-s-indian-dip-selection"},
+  {"id":"630053011","name":"M&S Spicy Prawn Laksa Noodles Bowl - Taste of Asia","price":6.0,"dealPrice":6.0,"size":"400g","kcal":436,"protein":18.8,"ocadoSlug":"m-s-spicy-prawn-laksa-noodles-bowl-taste-of-asia"},
+  {"id":"573830011","name":"M&S Three Bean Chilli","price":4.0,"dealPrice":4.0,"size":"400g","kcal":468,"protein":13.2,"ocadoSlug":"m-s-three-bean-chilli"},
+  {"id":"515548011","name":"M&S Taste Buds Mild Chicken Curry with Rice","price":3.5,"dealPrice":3.5,"size":"225g","kcal":230,"protein":16.0,"ocadoSlug":"m-s-taste-buds-mild-chicken-curry-with-rice"},
+  {"id":"630273011","name":"M&S Green Thai Chicken Curry with Sticky Rice - Taste of Asia","price":4.3,"dealPrice":4.3,"size":"400g","kcal":568,"protein":24.8,"ocadoSlug":"m-s-green-thai-chicken-curry-with-sticky-rice-taste-of-asia"},
+  {"id":"645790011","name":"M&S Collection Keralan King Prawn Curry","price":7.0,"dealPrice":7.0,"size":"460g","kcal":552,"protein":43.7,"ocadoSlug":"m-s-collection-keralan-king-prawn-curry"},
+  {"id":"673076011","name":"M&S Collection Keralan King Prawn Curry With Basmati Rice","price":5.5,"dealPrice":5.5,"size":"400g","kcal":560,"protein":28.0,"ocadoSlug":"m-s-collection-keralan-king-prawn-curry-with-basmati-rice"},
+  {"id":"515544011","name":"M&S Count On Us Chicken in a Mushroom Red Wine Sauce","price":4.25,"dealPrice":4.25,"size":"400g","kcal":308,"protein":27.2,"ocadoSlug":"m-s-count-on-us-chicken-in-a-mushroom-red-wine-sauce"},
+  {"id":"516533011","name":"M&S Shepherds Pie Meal to Share","price":6.5,"dealPrice":6.5,"size":"800g","kcal":896,"protein":56.0,"ocadoSlug":"m-s-shepherds-pie-meal-to-share"},
+  {"id":"581633011","name":"M&S Collection Jewelled Pilau Rice Side","price":3.5,"dealPrice":3.5,"size":"300g","kcal":435,"protein":9.0,"ocadoSlug":"m-s-collection-jewelled-pilau-rice-side"},
+  {"id":"679153011","name":"M&S Nutrient Dense Katsu Chicken","price":7.0,"dealPrice":7.0,"size":"400g","kcal":392,"protein":44.8,"ocadoSlug":"m-s-nutrient-dense-katsu-chicken"},
+  {"id":"581634011","name":"M&S Collection 8 Hours Slow Cooked Black Dal","price":3.5,"dealPrice":3.5,"size":"250g","kcal":462,"protein":14.0,"ocadoSlug":"m-s-collection-8-hours-slow-cooked-black-dal"},
+  {"id":"559280011","name":"M&S Taste Buds Chicken & Broccoli Bake","price":3.5,"dealPrice":3.5,"size":"225g","kcal":230,"protein":18.2,"ocadoSlug":"m-s-taste-buds-chicken-broccoli-bake"},
+  {"id":"679251011","name":"M&S Nutrient Dense Roasted Butternut & Almond Grains","price":4.0,"dealPrice":4.0,"size":"240g","kcal":350,"protein":13.4,"ocadoSlug":"m-s-nutrient-dense-roasted-butternut-almond-grains"},
+  {"id":"514956011","name":"M&S 6 Spicy Red Thai Fishcakes - Taste of Asia","price":3.75,"dealPrice":3.75,"size":"130g","kcal":207,"protein":20.4,"ocadoSlug":"m-s-6-spicy-red-thai-fishcakes-taste-of-asia"},
+  {"id":"649124011","name":"M&S Count On Us Roasted Vegetable Mozzarella & Tomato Pasta","price":4.25,"dealPrice":4.25,"size":"350g","kcal":312,"protein":12.2,"ocadoSlug":"m-s-count-on-us-roasted-vegetable-mozzarella-tomato-pasta"},
+  {"id":"671241011","name":"M&S Collection King Prawn & Pistachio Pesto Trofie Serves 1","price":6.5,"dealPrice":6.5,"size":"400g","kcal":836,"protein":37.6,"ocadoSlug":"m-s-collection-king-prawn-pistachio-pesto-trofie-serves-1"},
+  {"id":"546045011","name":"M&S Vegetable Chow Mein","price":5.0,"dealPrice":5.0,"size":"400g","kcal":464,"protein":13.6,"ocadoSlug":"m-s-vegetable-chow-mein"},
+  {"id":"516376011","name":"M&S Tempura Prawns with Sweet Chilli Sauce","price":5.5,"dealPrice":5.5,"size":"210g","kcal":464,"protein":20.8,"ocadoSlug":"m-s-tempura-prawns-with-sweet-chilli-sauce"},
+  {"id":"516819011","name":"M&S Gastropub Beef Bourguignon Main for Two","price":10.0,"dealPrice":10.0,"size":"650g","kcal":988,"protein":85.8,"ocadoSlug":"m-s-gastropub-beef-bourguignon-main-for-two"},
+  {"id":"671237011","name":"M&S Collection 6hr Slow Cooked Beef Shin Tortelloni Serves 1","price":6.5,"dealPrice":6.5,"size":"400g","kcal":616,"protein":28.0,"ocadoSlug":"m-s-collection-6hr-slow-cooked-beef-shin-tortelloni-serves-1"},
+  {"id":"585243011","name":"M&S Frites","price":6.25,"dealPrice":6.25,"size":"600g","kcal":1038,"protein":19.2,"ocadoSlug":"m-s-frites"},
+  {"id":"516768011","name":"M&S Mushy Peas","price":3.5,"dealPrice":3.5,"size":"300g","kcal":258,"protein":17.4,"ocadoSlug":"m-s-mushy-peas"},
+  {"id":"515887011","name":"M&S Taste Buds Spaghetti & Beef Meatballs in Tomato Sauce","price":3.5,"dealPrice":3.5,"size":"225g","kcal":243,"protein":13.3,"ocadoSlug":"m-s-taste-buds-spaghetti-beef-meatballs-in-tomato-sauce"},
+  {"id":"515199011","name":"M&S Made Without Spinach & Ricotta Ravioli","price":4.5,"dealPrice":4.5,"size":"250g","kcal":622,"protein":20.0,"ocadoSlug":"m-s-made-without-spinach-ricotta-ravioli"},
+  {"id":"671243011","name":"M&S Collection Sausage Ragu with Calabrian N'duja Mafalde Serves 1","price":6.5,"dealPrice":6.5,"size":"400g","kcal":920,"protein":28.4,"ocadoSlug":"m-s-collection-sausage-ragu-with-calabrian-n-duja-mafalde-serves-1"},
+  {"id":"679219011","name":"M&S Nutrient Dense Dukkah Chicken & 5 Bean Houmous","price":5.75,"dealPrice":5.75,"size":"305g","kcal":372,"protein":23.2,"ocadoSlug":"m-s-nutrient-dense-dukkah-chicken-5-bean-houmous"},
+  {"id":"514195011","name":"M&S Jasmine Rice","price":2.1,"dealPrice":2.1,"size":"300g","kcal":483,"protein":9.0,"ocadoSlug":"m-s-jasmine-rice"},
+  {"id":"516381011","name":"M&S Minced Beef Crispbakes","price":2.5,"dealPrice":2.5,"size":"227g","kcal":524,"protein":15.2,"ocadoSlug":"m-s-minced-beef-crispbakes"},
+  {"id":"528356011","name":"M&S Chicken, Leek & Spinach Hotpot","price":4.75,"dealPrice":4.75,"size":"400g","kcal":552,"protein":39.2,"ocadoSlug":"m-s-chicken-leek-spinach-hotpot"},
+  {"id":"649107011","name":"M&S High Protein Bang Bang Cauliflower","price":6.0,"dealPrice":6.0,"size":"365g","kcal":354,"protein":20.1,"ocadoSlug":"m-s-high-protein-bang-bang-cauliflower"},
+  {"id":"626137011","name":"M&S Barbecue High Protein Rice Cakes","price":2.1,"dealPrice":2.1,"size":"133g","kcal":600,"protein":33.0,"ocadoSlug":"m-s-barbecue-high-protein-rice-cakes"},
+  {"id":"650561011","name":"M&S Plant Kitchen Lentil Lasagne Serves 1","price":4.5,"dealPrice":4.5,"size":"400g","kcal":412,"protein":11.2,"ocadoSlug":"m-s-plant-kitchen-lentil-lasagne-serves-1"},
+  {"id":"516594011","name":"M&S Creamy Mushrooms","price":3.5,"dealPrice":3.5,"size":"300g","kcal":204,"protein":9.9,"ocadoSlug":"m-s-creamy-mushrooms"},
+  {"id":"558048011","name":"M&S Taste Buds Little Fishies","price":3.5,"dealPrice":3.5,"size":"180g","kcal":394,"protein":26.1,"ocadoSlug":"m-s-taste-buds-little-fishies"},
+  {"id":"671242011","name":"M&S Macaroni Cheese With Crispy Bacon Serves 2","price":6.25,"dealPrice":6.25,"size":"800g","kcal":1320,"protein":61.6,"ocadoSlug":"m-s-macaroni-cheese-with-crispy-bacon-serves-2"},
+  {"id":"573831011","name":"M&S Cod Mornay","price":5.25,"dealPrice":5.25,"size":"400g","kcal":344,"protein":28.4,"ocadoSlug":"m-s-cod-mornay"},
+  {"id":"515231011","name":"M&S Taste Buds Cottage Pie","price":3.9,"dealPrice":3.9,"size":"255g","kcal":235,"protein":12.8,"ocadoSlug":"m-s-taste-buds-cottage-pie"},
+  {"id":"679125011","name":"M&S Collection Roast Chicken Yorkshire Pudding","price":8.0,"dealPrice":8.0,"size":"490g","kcal":936,"protein":51.0,"ocadoSlug":"m-s-collection-roast-chicken-yorkshire-pudding"},
+  {"id":"516593011","name":"M&S Cumberland Pie Family Pack","price":8.75,"dealPrice":8.75,"size":"1.2kg","kcal":1452,"protein":84.0,"ocadoSlug":"m-s-cumberland-pie-family-pack"},
+  {"id":"516545011","name":"M&S 2 Chicken Breasts with Leek & Bacon","price":6.0,"dealPrice":6.0,"size":"365g","kcal":478,"protein":55.5,"ocadoSlug":"m-s-2-chicken-breasts-with-leek-bacon"},
+  {"id":"514544011","name":"M&S Cheesy Chilli Beef Nachos","price":6.5,"dealPrice":6.5,"size":"565g","kcal":1463,"protein":45.8,"ocadoSlug":"m-s-cheesy-chilli-beef-nachos"},
+  {"id":"630055011","name":"M&S Hot & Spicy Beef Noodles Bowl - Taste of Asia","price":6.0,"dealPrice":6.0,"size":"400g","kcal":500,"protein":32.0,"ocadoSlug":"m-s-hot-spicy-beef-noodles-bowl-taste-of-asia"},
+  {"id":"626582011","name":"M&S Vegetable Gyozas","price":4.75,"dealPrice":4.75,"size":"192g","kcal":311,"protein":7.9,"ocadoSlug":"m-s-vegetable-gyozas"},
+  {"id":"671239011","name":"M&S Collection Spaghetti Carbonara Alla Romana Serves 1","price":6.5,"dealPrice":6.5,"size":"400g","kcal":728,"protein":30.8,"ocadoSlug":"m-s-collection-spaghetti-carbonara-alla-romana-serves-1"},
+  {"id":"630057011","name":"M&S Chilli Chicken Ramen Bowl - Taste of Asia","price":5.75,"dealPrice":5.75,"size":"400g","kcal":308,"protein":38.0,"ocadoSlug":"m-s-chilli-chicken-ramen-bowl-taste-of-asia"},
+  {"id":"679139011","name":"M&S Nutrient Dense Cauli-Rice Prawn Paella","price":7.0,"dealPrice":7.0,"size":"400g","kcal":304,"protein":22.0,"ocadoSlug":"m-s-nutrient-dense-cauli-rice-prawn-paella"}
+];
+
+let excluded = new Set();
+let currentSort = {key: 'score', dir: -1};
+let searchTerm = '';
+
+function ocadoUrl(p) {
+  if (!p.ocadoSlug) return null;
+  return `https://www.ocado.com/products/${p.ocadoSlug}/${p.id}`;
+}
+
+function fmt(v, d=1) { return v==null ? '<span class="null">—</span>' : v.toFixed(d); }
+
+function render() {
+  const term = searchTerm.toLowerCase();
+  const rows = products
+    .filter(p => !term || p.name.toLowerCase().includes(term))
+    .map(p => ({...p, ppp: p.dealPrice && p.protein ? p.dealPrice/p.protein : null, pkc: p.dealPrice && p.kcal ? p.dealPrice*100/p.kcal : null, score: p.dealPrice && p.kcal && p.protein ? (p.protein*p.protein*4)/(p.dealPrice*p.kcal) : null}))
+    .sort((a,b) => {
+      let av=a[currentSort.key], bv=b[currentSort.key];
+      if(av==null&&bv==null) return 0; if(av==null) return 1; if(bv==null) return -1;
+      if(typeof av==='string') return av.localeCompare(bv)*currentSort.dir;
+      return (av-bv)*currentSort.dir;
+    });
+
+  document.getElementById('tbody').innerHTML = rows.map(p => {
+    const ex = excluded.has(p.id);
+    const url = ocadoUrl(p);
+    const nameCell = url
+      ? `<a href="${url}" target="_blank" rel="noopener">${p.name}</a>`
+      : `${p.name} <span style="color:#bbb;font-size:11px;">(no link)</span>`;
+    const dealTag = p.dealPrice < p.price
+      ? `<br><span class="deal">Any 3 for £10 → £${p.dealPrice.toFixed(2)}</span>` : '';
+    return `<tr class="${ex?'excluded':''}" data-id="${p.id}">
+      <td class="excl"><input type="checkbox" ${ex?'checked':''} onchange="toggle('${p.id}')"></td>
+      <td class="name">${nameCell}</td>
+      <td>${p.size||'—'}</td>
+      <td class="price">£${p.price.toFixed(2)}${dealTag}</td>
+      <td class="price">£${p.dealPrice.toFixed(2)}</td>
+      <td class="kcal">${fmt(p.kcal,0)}</td>
+      <td class="protein">${fmt(p.protein,1)}<small>g</small></td>
+      <td class="protein">${p.ppp!=null?'£'+fmt(p.ppp,3):'<span class="null">—</span>'}</td>
+      <td class="protein">${p.pkc!=null?fmt(p.pkc,2)+'p':'<span class="null">—</span>'}</td>
+      <td class="protein" style="font-weight:${p.score>3?'700':'400'};color:${p.score>3?'#2e7d32':p.score>1.5?'inherit':'#aaa'}">${p.score!=null?fmt(p.score,2):'<span class="null">—</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  updateStats();
+  document.getElementById('excluded-count').textContent = excluded.size ? `${excluded.size} excluded` : '';
+}
+
+function updateStats() {
+  const kept = products.filter(p => !excluded.has(p.id));
+  const prices   = kept.map(p => p.dealPrice||p.price).filter(x=>x);
+  const kcals    = kept.map(p => p.kcal).filter(x=>x&&x>100);
+  const proteins = kept.map(p => p.protein).filter(x=>x&&x>1&&x<100);
+  const ppps     = kept.filter(p=>p.dealPrice&&p.protein&&p.protein<100).map(p=>p.dealPrice/p.protein);
+  const avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : null;
+  const ap=avg(prices), ak=avg(kcals), apr=avg(proteins), appp=avg(ppps);
+  document.getElementById('s-count').textContent = kept.length;
+  document.getElementById('s-price').textContent = ap ? '£'+ap.toFixed(2) : '—';
+  document.getElementById('s-kcal').textContent = ak ? Math.round(ak) : '—';
+  document.getElementById('s-protein').textContent = apr ? apr.toFixed(1)+'g' : '—';
+  document.getElementById('s-cpp').textContent = appp ? '£'+appp.toFixed(3) : '—';
+}
+
+function toggle(id) { excluded.has(id)?excluded.delete(id):excluded.add(id); render(); scheduleSave(); }
+function selectAll(ex) {
+  const t=searchTerm.toLowerCase();
+  products.filter(p=>!t||p.name.toLowerCase().includes(t)).forEach(p=>ex?excluded.add(p.id):excluded.delete(p.id));
+  render(); scheduleSave();
+}
+function applyFilter() { searchTerm=document.getElementById('search').value; render(); }
+function sortBy(k) { currentSort.key===k?currentSort.dir*=-1:(currentSort={key:k,dir:1}); render(); }
+
+const LS_KEY = 'excl_' + KEY;
+const API = 'http://localhost:5000/api';
+let saveTimer = null;
+function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(saveExclusions, 400); }
+function saveExclusions() {
+  localStorage.setItem(LS_KEY, JSON.stringify([...excluded]));
+}
+async function applyToMealData() {
+  const s = document.getElementById('apply-status');
+  s.style.color='#888'; s.textContent='Applying…';
+  try {
+    let cur = {};
+    try { cur = await (await fetch(`${API}/exclusions`)).json(); } catch(e) {}
+    cur[KEY] = [...excluded];
+    await fetch(`${API}/exclusions`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cur)});
+    const r = await fetch(`${API}/apply/${KEY}`, {method:'POST'});
+    const d = await r.json();
+    if(d.ok) {
+      const st=d.stats;
+      s.style.color='#2e7d32';
+      s.textContent=`Done! £${st.avg_price}/meal, ${st.avg_kcal} kcal, ${st.avg_protein}g protein (${st.kept} meals)`;
+    } else { s.style.color='#c0392b'; s.textContent=`Error: ${d.error}`; }
+  } catch(e) { s.style.color='#c0392b'; s.textContent='Could not reach server — is server.py running?'; }
+}
+function loadExclusions() {
+  try {
+    JSON.parse(localStorage.getItem(LS_KEY) || '[]').forEach(id=>excluded.add(id));
+  } catch(e) {}
+  render();
+}
+loadExclusions();
+</script>
+</body>
+</html>
