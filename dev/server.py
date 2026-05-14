@@ -53,7 +53,12 @@ def load_products(key):
     if not f or not f.exists():
         return None
     raw = json.loads(f.read_text(encoding="utf-8"))
-    # tesco has {"frozen": [...]}; others have {"products": [...]}
+    # Three observed shapes across scraper outputs:
+    #   tesco       -> {"frozen": [...]}
+    #   parsleybox  -> {"products": [...]}
+    #   ms          -> [...]   (plain list at root)
+    if isinstance(raw, list):
+        return raw
     return raw.get("frozen") or raw.get("products") or []
 
 def recalculate(key):
