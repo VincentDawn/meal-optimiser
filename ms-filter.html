@@ -444,14 +444,16 @@ function render() {
     const nameCell = url
       ? `<a href="${url}" target="_blank" rel="noopener">${p.name}</a>`
       : `${p.name} <span style="color:#bbb;font-size:11px;">(no link)</span>`;
-    const dealTag = p.dealPrice < p.price
+    const dealTag = (p.dealPrice != null && p.price != null && p.dealPrice < p.price)
       ? `<br><span class="deal">Any 3 for £10 → £${p.dealPrice.toFixed(2)}</span>` : '';
+    const priceCell    = p.price != null     ? `£${p.price.toFixed(2)}`     : '<span class="null">—</span>';
+    const dealPriceCell = p.dealPrice != null ? `£${p.dealPrice.toFixed(2)}` : '<span class="null">—</span>';
     return `<tr class="${ex?'excluded':''}" data-id="${p.id}">
       <td class="excl"><input type="checkbox" ${ex?'checked':''} onchange="toggle('${p.id}')"></td>
       <td class="name">${nameCell}</td>
       <td>${p.size||'—'}</td>
-      <td class="price">£${p.price.toFixed(2)}${dealTag}</td>
-      <td class="price">£${p.dealPrice.toFixed(2)}</td>
+      <td class="price">${priceCell}${dealTag}</td>
+      <td class="price">${dealPriceCell}</td>
       <td class="kcal">${fmt(p.kcal,0)}</td>
       <td class="protein">${fmt(p.protein,1)}<small>g</small></td>
       <td class="protein">${p.ppp!=null?'£'+fmt(p.ppp,3):'<span class="null">—</span>'}</td>

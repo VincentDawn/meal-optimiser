@@ -48,3 +48,22 @@ python dev/server.py
 The dev server adds three things on top of static serving: it can read/write `scrapers/exclusions.json`, recompute averages with those exclusions applied, and patch `meal-data.js` in place. Stdlib only — no pip install needed.
 
 The scrapers themselves use `requests`, `beautifulsoup4`, and Playwright — see [scrapers/README.md](scrapers/README.md).
+
+## Tests
+
+Playwright drives a real browser through the analysis page and the four filter pages. Calculation tests run inside the browser via `page.evaluate()` so they exercise the same code the live UI uses.
+
+```bash
+npm install            # one-time, installs @playwright/test
+npx playwright install chromium  # one-time, downloads ~110 MB browser
+npm test               # runs all 44 tests headless (~5 sec)
+npm run test:headed    # watch the browser do its thing
+npm run test:ui        # Playwright's UI mode for debugging
+```
+
+The Playwright config boots `python -m http.server 8765` automatically before the tests and reuses any server already running on that port.
+
+Test layout:
+- `tests/calculations.spec.js` — pure-logic asserts (weeklyCost, deliveryCostPerWeek, surplus, availability filtering)
+- `tests/analysis.spec.js` — UI behaviour for the main analysis page (input wiring, persistence, re-renders)
+- `tests/filter-pages.spec.js` — exclusion + persistence across all four supplier filter pages

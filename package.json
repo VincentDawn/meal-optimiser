@@ -1,0 +1,15 @@
+{
+  "name": "meal-optimiser",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Decision-support tool for choosing the most cost-effective UK ready-meal/meal-prep strategy.",
+  "scripts": {
+    "serve": "python -m http.server 8765",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}
