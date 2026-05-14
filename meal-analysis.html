@@ -65,18 +65,57 @@
 <body>
 
 <h1>Meal Strategy — Interactive Analysis</h1>
-<p class="sub">Loaded from meal-data.js · Edit that file to update costs, macros & options · 21 meals/week</p>
+<p class="sub">Compares ~25 ready-meal strategies on cost, calories, protein and active prep time · all your settings save in your browser</p>
 
-<!-- PERSONAL RATE SETUP -->
-<div class="slider-section" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-  <label for="netRateInput" style="font-size:0.82rem;color:#8b949e">Your hourly net rate (after tax)</label>
-  <div style="display:flex;align-items:center;gap:6px">
-    <span style="font-size:1.4rem;color:#fff;font-weight:700">£</span>
-    <input type="number" id="netRateInput" min="1" max="200" step="0.01" value="17.23"
-           style="width:90px;font-size:1.4rem;font-weight:700;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#fff;padding:4px 8px;text-align:right">
-    <span style="font-size:0.82rem;color:#6e7681">/ hr</span>
+<!-- PERSONAL CIRCUMSTANCES -->
+<style>
+  .yc-panel { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px 22px; margin-bottom: 20px; }
+  .yc-panel h2 { font-size: 0.78rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 14px; }
+  .yc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .yc-field label { display: block; font-size: 0.78rem; color: #8b949e; margin-bottom: 6px; }
+  .yc-input-row { display: flex; align-items: center; gap: 6px; }
+  .yc-input-row .prefix, .yc-input-row .suffix { font-size: 0.85rem; color: #8b949e; }
+  .yc-input { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #fff; padding: 6px 10px; font-size: 1.05rem; font-weight: 700; width: 90px; text-align: right; }
+  .yc-input:focus { outline: none; border-color: #58a6ff; }
+  .yc-hint { font-size: 0.7rem; color: #6e7681; margin-top: 4px; line-height: 1.4; }
+</style>
+<div class="yc-panel">
+  <h2>Your circumstances <span style="text-transform:none;color:#6e7681;font-weight:400">— saved in your browser</span></h2>
+  <div class="yc-grid">
+    <div class="yc-field">
+      <label for="netRateInput">Hourly net rate (after tax)</label>
+      <div class="yc-input-row">
+        <span class="prefix">£</span>
+        <input type="number" id="netRateInput" class="yc-input" min="1" max="200" step="0.01" value="17.23">
+        <span class="suffix">/ hr</span>
+      </div>
+      <div class="yc-hint">Your real take-home rate. Used as the break-even reference point.</div>
+    </div>
+    <div class="yc-field">
+      <label for="mealsInput">Meals per week</label>
+      <div class="yc-input-row">
+        <input type="number" id="mealsInput" class="yc-input" min="7" max="42" step="1" value="21">
+        <span class="suffix">meals</span>
+      </div>
+      <div class="yc-hint">21 = 3/day. Lower if you skip breakfast or eat out often.</div>
+    </div>
+    <div class="yc-field">
+      <label for="instoreInput">In-store shopping trip time</label>
+      <div class="yc-input-row">
+        <input type="number" id="instoreInput" class="yc-input" min="5" max="120" step="1" value="25">
+        <span class="suffix">min</span>
+      </div>
+      <div class="yc-hint">Round-trip drive + in-store time. Applies to any option you'd shop in person.</div>
+    </div>
+    <div class="yc-field">
+      <label for="onlineInput">Online recurring order time</label>
+      <div class="yc-input-row">
+        <input type="number" id="onlineInput" class="yc-input" min="0" max="60" step="1" value="5">
+        <span class="suffix">min/wk</span>
+      </div>
+      <div class="yc-hint">Time to confirm your weekly Tesco/Ocado slot. 0 if fully automated.</div>
+    </div>
   </div>
-  <span style="font-size:0.72rem;color:#6e7681">Saved in your browser. Used as your reference for break-even comparisons.</span>
 </div>
 
 <!-- SLIDERS -->
@@ -172,14 +211,39 @@
 // ═══════════════════════════════════
 const META  = MEAL_DATASET.meta;
 const OPTS  = MEAL_DATASET.options;
-const MEALS = META.meals_per_week;
 const HEAT  = META.heat_active_secs / 3600;  // hours
-const RATE_LS_KEY = 'meal_optimiser_net_rate';
-const RATE_DEFAULT = 17.23;
-let NET_EMPLOYMENT = parseFloat(localStorage.getItem(RATE_LS_KEY)) || RATE_DEFAULT;
+
+// ── Personal settings (persisted in localStorage) ───────────────────────────
+const LS = {
+  rate:    'meal_optimiser_net_rate',
+  meals:   'meal_optimiser_meals_per_week',
+  instore: 'meal_optimiser_instore_mins',
+  online:  'meal_optimiser_online_mins',
+};
+const DEFAULTS = { rate: 17.23, meals: META.meals_per_week, instore: 25, online: 5 };
+const loadNum = (k, fallback) => {
+  const v = parseFloat(localStorage.getItem(k));
+  return (isFinite(v) && v >= 0) ? v : fallback;
+};
+let NET_EMPLOYMENT = loadNum(LS.rate, DEFAULTS.rate);
+let MEALS          = loadNum(LS.meals, DEFAULTS.meals);
+let INSTORE_MINS   = loadNum(LS.instore, DEFAULTS.instore);
+let ONLINE_MINS    = loadNum(LS.online, DEFAULTS.online);
 const KEEP = 0.56;
 
 let TIME_VALUE = NET_EMPLOYMENT;
+
+// Override the per-option selfShoppingMins from meal-data.js with the user's
+// values. The dataset encodes shopping type via the magnitude:
+//   0       = delivered or pickup-at-work (no trip)
+//   1..10   = recurring online slot confirmation (use ONLINE_MINS)
+//   >10     = real in-store trip          (use INSTORE_MINS)
+function effectiveShoppingMins(opt) {
+  const v = opt.selfShoppingMins || 0;
+  if (v === 0)   return 0;
+  if (v <= 10)   return ONLINE_MINS;
+  return INSTORE_MINS;
+}
 let COOK_MINS  = 8;
 
 const CAT_COLOR = {
@@ -199,7 +263,7 @@ function readyHrs(){ return MEALS * HEAT; }
 
 function activeHrs(opt, includeShopping) {
   let base = opt.timeType === 'DIY' ? diyHrs() : opt.timeType === 'MD' ? mdHrs() : readyHrs();
-  if (includeShopping) base += (opt.selfShoppingMins || 0) / 60;
+  if (includeShopping) base += effectiveShoppingMins(opt) / 60;
   return base;
 }
 
@@ -525,23 +589,47 @@ function updateAll() {
   });
 }
 
-// Initialise UI from stored rate
+// Initialise inputs from stored values
 document.getElementById('netRateInput').value = NET_EMPLOYMENT.toFixed(2);
-document.getElementById('tvSlider').value = NET_EMPLOYMENT;
+document.getElementById('mealsInput').value   = MEALS;
+document.getElementById('instoreInput').value = INSTORE_MINS;
+document.getElementById('onlineInput').value  = ONLINE_MINS;
+document.getElementById('tvSlider').value     = NET_EMPLOYMENT;
 
 buildCharts();
 updateAll();
 
 document.getElementById('tvSlider').addEventListener('input', e => { TIME_VALUE = parseFloat(e.target.value); updateAll(); });
 document.getElementById('cookSlider').addEventListener('input', e => { COOK_MINS = parseInt(e.target.value); updateAll(); });
+
 document.getElementById('netRateInput').addEventListener('change', e => {
   const v = parseFloat(e.target.value);
   if (!v || v <= 0) return;
   NET_EMPLOYMENT = v;
-  localStorage.setItem(RATE_LS_KEY, v);
-  // Snap the slider/explorer to the new rate so the chart reference matches
+  localStorage.setItem(LS.rate, v);
   TIME_VALUE = v;
   document.getElementById('tvSlider').value = v;
+  updateAll();
+});
+document.getElementById('mealsInput').addEventListener('change', e => {
+  const v = parseInt(e.target.value);
+  if (!v || v < 1) return;
+  MEALS = v;
+  localStorage.setItem(LS.meals, v);
+  updateAll();
+});
+document.getElementById('instoreInput').addEventListener('change', e => {
+  const v = parseInt(e.target.value);
+  if (isNaN(v) || v < 0) return;
+  INSTORE_MINS = v;
+  localStorage.setItem(LS.instore, v);
+  updateAll();
+});
+document.getElementById('onlineInput').addEventListener('change', e => {
+  const v = parseInt(e.target.value);
+  if (isNaN(v) || v < 0) return;
+  ONLINE_MINS = v;
+  localStorage.setItem(LS.online, v);
   updateAll();
 });
 </script>
