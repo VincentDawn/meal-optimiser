@@ -97,11 +97,18 @@
   .opt-pill:hover { border-color:#58a6ff; color:#fff; }
   .opt-pill.active { background:#1f3756; border-color:#58a6ff; color:#fff; font-weight:600; }
   .opt-hint { font-size:0.72rem; color:#6e7681; margin-top:8px; line-height:1.4; }
+  .custom-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-top:12px; padding-top:12px; border-top:1px solid #21262d; }
+  .custom-row label { display:block; font-size:0.74rem; color:#8b949e; margin-bottom:4px; }
+  .custom-dir { color:#6e7681; }
+  .custom-val { color:#fff; font-weight:600; float:right; }
+  .custom-row input[type=range] { width:100%; height:4px; border-radius:3px; background:#30363d; outline:none; -webkit-appearance:none; cursor:pointer; }
+  .custom-row input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:#58a6ff; cursor:pointer; }
 </style>
 <div class="opt-panel">
   <h2>Optimise rankings for</h2>
   <div class="opt-pills" id="optPills"></div>
   <div class="opt-hint" id="optHint"></div>
+  <div id="customSliders" style="display:none"></div>
 </div>
 
 <!-- PERSONAL CIRCUMSTANCES -->
@@ -259,7 +266,10 @@
   <div class="card">
     <h2>Cost vs Active Time (no shopping trip)</h2>
     <div style="position:relative;height:360px"><canvas id="scatter"></canvas></div>
-    <p class="note">Break-even line slope = your hourly rate. Points below = better value than DIY Farmfoods. Hover any dot for the option name. Scroll to zoom in on clusters; shift+drag to pan; double-click to reset.</p>
+    <p style="font-size:0.85rem;color:#cdd9e5;font-weight:600;margin-top:12px;text-align:center;background:#1c2128;border:1px solid #30363d;border-radius:6px;padding:8px 12px">
+      Hover any dot for the option name · scroll to zoom · click + drag to pan · double-click to reset
+    </p>
+    <p class="note">Break-even line slope = your hourly rate. Points below the line = better value than DIY Farmfoods.</p>
   </div>
   <div class="card">
     <h2>Break-even Time Value Required (net £/hr) — fixed by costs</h2>
@@ -544,13 +554,16 @@ function buildCharts() {
         legend: { display: false },
         tooltip: { callbacks: { title: ctx => ctx[0].dataset.label, label: ctx => `£${ctx.raw.y.toFixed(0)}/wk · ${ctx.raw.x.toFixed(2)} hrs active` } },
         zoom: {
-          pan:  { enabled: true, mode: 'xy', modifierKey: 'shift' },
+          // Plain click+drag pans (no modifier key needed). Hover/click on
+          // a point still works — the plugin only initiates pan on
+          // mousedowns that aren't on a dataset point.
+          pan:  { enabled: true, mode: 'xy' },
           zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' },
           limits: { x: { min: 0, max: 5 }, y: { min: 0, max: 300 } },
         },
       },
       scales: {
-        x: { title:{display:true,text:'Weekly Active Time (hrs)  —  scroll to zoom · shift+drag to pan',color:'#6e7681'}, grid:{color:'#21262d'}, ticks:{color:'#6e7681'}, min:0, max:3.5 },
+        x: { title:{display:true,text:'Weekly Active Time (hrs)',color:'#6e7681'}, grid:{color:'#21262d'}, ticks:{color:'#6e7681'}, min:0, max:3.5 },
         y: { title:{display:true,text:'Weekly Cost (£)',color:'#6e7681'}, grid:{color:'#21262d'}, ticks:{color:'#6e7681',callback:v=>'£'+v}, min:0, max:240 },
       }
     },
@@ -980,13 +993,99 @@ const PRESETS = {
     score: opt => -activeHrs(opt, true),
     fmt:   s => `${(-s).toFixed(2)} hr/wk`,
   },
+  custom: {
+    label: 'Custom…',
+    hint:  'Set your own weights. Each metric is normalised across the option set, then summed weighted. Set a weight to 0 to ignore that metric.',
+    // Custom uses a closure over CUSTOM_WEIGHTS computed against the current
+    // option set — see scoreCustom() below for the actual logic.  Score
+    // function here is filled in lazily before each render.
+    score: opt => scoreCustom(opt),
+    fmt:   s => s == null ? '—' : s.toFixed(3),
+  },
 };
+
+// ── Custom preset weights (persisted) ───────────────────────────────────────
+const CUSTOM_LS = 'meal_optimiser_custom_weights';
+const DEFAULT_WEIGHTS = { cost: 50, protein: 50, kcal: 25, time: 25 };
+let CUSTOM_WEIGHTS = (() => {
+  try { return { ...DEFAULT_WEIGHTS, ...JSON.parse(localStorage.getItem(CUSTOM_LS) || '{}') }; }
+  catch (e) { return { ...DEFAULT_WEIGHTS }; }
+})();
+
+// Re-computed each updateAll(): min/max of each metric across eligible
+// options, used to normalise to 0..1 for the weighted-sum score.
+let CUSTOM_RANGES = null;
+
+function recomputeCustomRanges() {
+  const eligible = OPTS.filter(o => !o.baseline && (showDominated || !o.dominated) && isAvailable(o));
+  const costs    = eligible.map(o => weeklyCost(o)).filter(Number.isFinite);
+  const proteins = eligible.map(o => o.protein).filter(x => typeof x === 'number');
+  const kcals    = eligible.map(o => o.calories).filter(x => typeof x === 'number');
+  const times    = eligible.map(o => activeHrs(o, true)).filter(Number.isFinite);
+  const r = (arr) => arr.length ? { min: Math.min(...arr), max: Math.max(...arr) } : { min: 0, max: 1 };
+  CUSTOM_RANGES = { cost: r(costs), protein: r(proteins), kcal: r(kcals), time: r(times) };
+}
+
+// Returns 0..1 — null inputs treated as worst-of-set so they don't get a free pass
+function norm(value, range, lowerIsBetter) {
+  if (range.max === range.min) return 0.5;
+  if (value == null || !isFinite(value)) return 0;
+  const t = (value - range.min) / (range.max - range.min);
+  return lowerIsBetter ? 1 - t : t;
+}
+
+function scoreCustom(opt) {
+  if (!CUSTOM_RANGES) recomputeCustomRanges();
+  const r = CUSTOM_RANGES;
+  const W = CUSTOM_WEIGHTS;
+  const cost    = norm(weeklyCost(opt),       r.cost,    /*lowerIsBetter*/ true);
+  const protein = norm(opt.protein,           r.protein, false);
+  const kcal    = norm(opt.calories,          r.kcal,    false);
+  const time    = norm(activeHrs(opt, true),  r.time,    true);
+  const totalW = (W.cost + W.protein + W.kcal + W.time) || 1;
+  return (W.cost * cost + W.protein * protein + W.kcal * kcal + W.time * time) / totalW;
+}
+
+function renderCustomSliders() {
+  const slot = document.getElementById('customSliders');
+  if (!slot) return;
+  if (currentPreset !== 'custom') { slot.style.display = 'none'; return; }
+  slot.style.display = '';
+  slot.innerHTML = `
+    <div class="custom-grid">
+      ${[
+        ['cost',    'Cost',    'lower = better'],
+        ['protein', 'Protein', 'higher = better'],
+        ['kcal',    'Calories','higher = better'],
+        ['time',    'Active time', 'lower = better'],
+      ].map(([k, label, dir]) => `
+        <div class="custom-row">
+          <label>${label} <span class="custom-dir">(${dir})</span> <span class="custom-val" id="cw-${k}-val">${CUSTOM_WEIGHTS[k]}</span></label>
+          <input type="range" id="cw-${k}" min="0" max="100" step="1" value="${CUSTOM_WEIGHTS[k]}">
+        </div>
+      `).join('')}
+    </div>
+  `;
+  ['cost','protein','kcal','time'].forEach(k => {
+    const inp = document.getElementById('cw-' + k);
+    inp.addEventListener('input', e => {
+      CUSTOM_WEIGHTS[k] = parseInt(e.target.value);
+      document.getElementById('cw-' + k + '-val').textContent = CUSTOM_WEIGHTS[k];
+      localStorage.setItem(CUSTOM_LS, JSON.stringify(CUSTOM_WEIGHTS));
+      recomputeCustomRanges();
+      updateAll();
+    });
+  });
+}
 
 const PRESET_LS = 'meal_optimiser_preset';
 let currentPreset = PRESETS[localStorage.getItem(PRESET_LS)] ? localStorage.getItem(PRESET_LS) : 'surplus';
 
 function rankByPreset(opts) {
   const p = PRESETS[currentPreset];
+  // The custom preset normalises across the option set — recompute ranges
+  // before scoring or you'll be ranking against stale min/max.
+  if (currentPreset === 'custom') recomputeCustomRanges();
   return opts
     .map(o => ({ opt: o, s: p.score(o) }))
     .sort((a, b) => {
@@ -1008,10 +1107,13 @@ function renderOptPills() {
     b.addEventListener('click', () => {
       currentPreset = b.dataset.preset;
       localStorage.setItem(PRESET_LS, currentPreset);
+      if (currentPreset === 'custom') recomputeCustomRanges();
       renderOptPills();
+      renderCustomSliders();
       updateAll();
     });
   });
+  renderCustomSliders();
 }
 
 // ── Boot ────────────────────────────────────────────────────────────────────
@@ -1038,6 +1140,22 @@ async function init() {
   // Double-click anywhere on the scatter to reset zoom/pan
   const scatterEl = document.getElementById('scatter');
   scatterEl.addEventListener('dblclick', () => { if (scatterChart) scatterChart.resetZoom(); });
+
+  // Browser zoom (Ctrl +/-) doesn't reliably fire ResizeObserver on Chart.js's
+  // canvas containers, so the charts get visibly skewed after a zoom change
+  // and only recover on a full reload.  Debounced resize on window AND
+  // visualViewport catches both viewport changes and zoom changes.
+  let resizeTimer;
+  function refreshAllCharts() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      [surplusChart, scatterChart, breakChart].forEach(c => { if (c) c.resize(); });
+    }, 120);
+  }
+  window.addEventListener('resize', refreshAllCharts);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', refreshAllCharts);
+  }
 
   // Per-supplier freshness summary in the per-store settings disclosure
   if (window.Freshness) {

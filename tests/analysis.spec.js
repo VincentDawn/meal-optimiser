@@ -39,8 +39,39 @@ test('cooking time input persists and recomputes diy active hours', async ({ pag
 });
 
 test('optimisation presets are rendered as pills with the default active', async ({ page }) => {
-  expect(await page.locator('.opt-pill').count()).toBe(6);
+  expect(await page.locator('.opt-pill').count()).toBe(7);
   await expect(page.locator('.opt-pill.active')).toHaveText('Best surplus vs DIY');
+});
+
+test('custom preset reveals weight sliders, persists, and re-ranks live', async ({ page }) => {
+  await page.locator('.opt-pill[data-preset="custom"]').click();
+  // 4 sliders should appear
+  await expect(page.locator('#customSliders input[type=range]')).toHaveCount(4);
+  // Ranking should be defined (not all null)
+  const leaderBefore = await page.locator('.top3-card').first().locator('.medal-name').textContent();
+  expect(leaderBefore).toBeTruthy();
+  // Crank protein weight to 100, others to 0 — leader should now be a high-protein option
+  await page.locator('#cw-cost').fill('0');
+  await page.locator('#cw-cost').dispatchEvent('input');
+  await page.locator('#cw-time').fill('0');
+  await page.locator('#cw-time').dispatchEvent('input');
+  await page.locator('#cw-kcal').fill('0');
+  await page.locator('#cw-kcal').dispatchEvent('input');
+  await page.locator('#cw-protein').fill('100');
+  await page.locator('#cw-protein').dispatchEvent('input');
+  // Persisted
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('meal_optimiser_custom_weights')));
+  expect(stored.protein).toBe(100);
+  expect(stored.cost).toBe(0);
+  // Top-1 leader should be among the highest-protein options in the dataset
+  const leaderAfter = await page.locator('.top3-card').first().locator('.medal-name').textContent();
+  const topProteinIds = await page.evaluate(() =>
+    OPTS.filter(o => !o.baseline && o.protein != null)
+        .sort((a, b) => b.protein - a.protein)
+        .slice(0, 3)
+        .map(o => o.label)
+  );
+  expect(topProteinIds).toContain(leaderAfter);
 });
 
 test('switching preset persists, re-renders top-3, and changes the leader', async ({ page }) => {
