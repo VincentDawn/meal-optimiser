@@ -12,19 +12,40 @@ test.beforeEach(async ({ page }) => {
 
 test('page loads with default values surfaced in stats', async ({ page }) => {
   await expect(page.locator('#sNetRate')).toHaveText('£17.23/hr');
-  await expect(page.locator('#sTV')).toHaveText('£17.23/hr');
 });
 
-test('changing the net-rate input snaps the slider and ref-line', async ({ page }) => {
+test('changing the net-rate input updates everything (rate is also the time value now)', async ({ page }) => {
   await page.fill('#netRateInput', '25');
   await page.locator('#netRateInput').dispatchEvent('change');
   await expect(page.locator('#sNetRate')).toHaveText('£25.00/hr');
-  await expect(page.locator('#sTV')).toHaveText('£25.00/hr');
-  // Slider value should snap to the new rate
-  expect(await page.locator('#tvSlider').inputValue()).toBe('25');
+  // Internally TIME_VALUE should be the same as NET_EMPLOYMENT after the collapse
+  const tv = await page.evaluate(() => TIME_VALUE);
+  const ne = await page.evaluate(() => NET_EMPLOYMENT);
+  expect(tv).toBe(25);
+  expect(ne).toBe(25);
   // Persisted to localStorage
   const stored = await page.evaluate(() => localStorage.getItem('meal_optimiser_net_rate'));
   expect(parseFloat(stored)).toBe(25);
+});
+
+test('cooking time input persists and recomputes diy active hours', async ({ page }) => {
+  await page.fill('#cookInput', '15');
+  await page.locator('#cookInput').dispatchEvent('change');
+  const stored = await page.evaluate(() => localStorage.getItem('meal_optimiser_cook_mins'));
+  expect(parseInt(stored)).toBe(15);
+  const diy = await page.evaluate(() => diyHrs());
+  // 21 meals * 15 min / 60 = 5.25 hrs
+  expect(diy).toBeCloseTo(21 * 15 / 60, 3);
+});
+
+test('show-dominated toggle reveals filtered options in nonDominated()', async ({ page }) => {
+  const before = await page.evaluate(() => nonDominated().some(o => o.dominated));
+  expect(before).toBe(false);
+  await page.locator('#showDominatedInput').check();
+  const after = await page.evaluate(() => nonDominated().some(o => o.dominated));
+  expect(after).toBe(true);
+  const stored = await page.evaluate(() => localStorage.getItem('meal_optimiser_show_dominated'));
+  expect(stored).toBe('1');
 });
 
 test('rate input rejects 0 and negative values', async ({ page }) => {

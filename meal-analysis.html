@@ -5,6 +5,8 @@
 <title>Meal Strategy — Interactive Analysis</title>
 <script src="meal-data.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #cdd9e5; padding: 28px; }
@@ -83,38 +85,63 @@
   <h2>Your circumstances <span style="text-transform:none;color:#6e7681;font-weight:400">— saved in your browser</span></h2>
   <div class="yc-grid">
     <div class="yc-field">
-      <label for="netRateInput">Hourly net rate (after tax)</label>
+      <label for="netRateInput">Hourly rate (after tax)</label>
       <div class="yc-input-row">
         <span class="prefix">£</span>
-        <input type="number" id="netRateInput" class="yc-input" min="1" max="200" step="0.01" value="17.23">
+        <input type="number" id="netRateInput" class="yc-input" min="1" max="500" step="0.01" value="17.23">
         <span class="suffix">/ hr</span>
       </div>
-      <div class="yc-hint">Your real take-home rate. Used as the break-even reference point.</div>
+      <div class="yc-hint">What your hour is actually worth. Drives every break-even calculation.</div>
     </div>
     <div class="yc-field">
       <label for="mealsInput">Meals per week</label>
       <div class="yc-input-row">
-        <input type="number" id="mealsInput" class="yc-input" min="7" max="42" step="1" value="21">
+        <input type="number" id="mealsInput" class="yc-input" min="1" max="42" step="1" value="21">
         <span class="suffix">meals</span>
       </div>
       <div class="yc-hint">21 = 3/day. Lower if you skip breakfast or eat out often.</div>
     </div>
     <div class="yc-field">
-      <label for="instoreInput">In-store shopping trip time</label>
+      <label for="cookInput">Cooking time per meal</label>
       <div class="yc-input-row">
-        <input type="number" id="instoreInput" class="yc-input" min="5" max="120" step="1" value="25">
-        <span class="suffix">min</span>
+        <input type="number" id="cookInput" class="yc-input" min="0" max="60" step="1" value="8">
+        <span class="suffix">min/meal</span>
       </div>
-      <div class="yc-hint">Round-trip drive + in-store time. Applies to any option you'd shop in person.</div>
+      <div class="yc-hint">Active prep + cleanup. Batch cooker? Divide your weekly total by meals (e.g. 2 hrs ÷ 21 ≈ 6 min).</div>
     </div>
     <div class="yc-field">
-      <label for="onlineInput">Online recurring order time</label>
+      <label for="instoreInput">Shopping trip time</label>
+      <div class="yc-input-row">
+        <input type="number" id="instoreInput" class="yc-input" min="0" max="180" step="1" value="25">
+        <span class="suffix">min/trip</span>
+      </div>
+      <div class="yc-hint">Round-trip drive + time in store. Applies to anything you'd shop in person.</div>
+    </div>
+    <div class="yc-field">
+      <label for="onlineInput">Online order admin time</label>
       <div class="yc-input-row">
         <input type="number" id="onlineInput" class="yc-input" min="0" max="60" step="1" value="5">
         <span class="suffix">min/wk</span>
       </div>
-      <div class="yc-hint">Time to confirm your weekly Tesco/Ocado slot. 0 if fully automated.</div>
+      <div class="yc-hint">Time per week confirming your recurring Tesco/Ocado slot. 0 if you don't use them.</div>
     </div>
+    <div class="yc-field" style="display:flex;align-items:center;gap:8px">
+      <input type="checkbox" id="showDominatedInput" style="width:16px;height:16px;cursor:pointer;accent-color:#58a6ff">
+      <label for="showDominatedInput" style="margin:0;cursor:pointer">Show "always worse" options</label>
+    </div>
+  </div>
+</div>
+
+<!-- COLOUR LEGEND -->
+<div class="yc-panel" style="padding:12px 22px">
+  <div style="display:flex;flex-wrap:wrap;gap:18px;font-size:0.74rem;color:#8b949e;align-items:center">
+    <strong style="color:#cdd9e5;font-size:0.78rem">Colour key:</strong>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#d29922;vertical-align:middle;margin-right:5px"></span>DIY (cook from scratch)</span>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f0883e;vertical-align:middle;margin-right:5px"></span>Meal-deal hybrid</span>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#3fb950;vertical-align:middle;margin-right:5px"></span>Supermarket ready meal</span>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#58a6ff;vertical-align:middle;margin-right:5px"></span>Delivery service</span>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f85149;vertical-align:middle;margin-right:5px"></span>Not justified at your rate</span>
+    <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#484f58;vertical-align:middle;margin-right:5px"></span>"Always worse" option</span>
   </div>
 </div>
 
@@ -167,35 +194,13 @@
   </div>
 </details>
 
-<!-- SLIDERS -->
-<div class="slider-section">
-  <h2>Adjust your assumptions</h2>
-  <div class="sliders">
-    <div class="slider-group">
-      <label>Personal time value</label>
-      <div class="slider-val" id="tvDisplay">£17.23<small>/ hr net</small></div>
-      <input type="range" id="tvSlider" min="5" max="60" step="0.5" value="17.23">
-      <div class="tick-row"><span>£5</span><span>£20</span><span>£35</span><span>£50</span><span>£60</span></div>
-      <div class="ref-line" id="tvRef">▲ Matches your hourly net rate (£17.23/hr)</div>
-    </div>
-    <div class="slider-group">
-      <label>DIY active cooking time per meal</label>
-      <div class="slider-val" id="cookDisplay">8<small>min active</small></div>
-      <input type="range" id="cookSlider" min="2" max="20" step="1" value="8">
-      <div class="tick-row"><span>2m</span><span>6m</span><span>10m</span><span>15m</span><span>20m</span></div>
-      <div class="ref-line-blue" id="cookRef">21 × 8 min = 2.80 hrs/wk active cooking</div>
-    </div>
-  </div>
-</div>
-
 <!-- STATS -->
 <div class="stats">
-  <div class="stat"><div class="stat-label">Your Net Rate</div><div class="stat-val" id="sNetRate">£17.23/hr</div></div>
-  <div class="stat blue"><div class="stat-label">Selected Time Value</div><div class="stat-val" id="sTV">£17.23/hr</div></div>
-  <div class="stat"><div class="stat-label">DIY Active Time/wk</div><div class="stat-val" id="sDIY">2.80 hrs</div></div>
-  <div class="stat"><div class="stat-label">Ready Meal Active/wk</div><div class="stat-val">0.18 hrs</div></div>
-  <div class="stat green"><div class="stat-label">Max Time Saveable</div><div class="stat-val" id="sSave">2.62 hrs/wk</div></div>
-  <div class="stat amber"><div class="stat-label">Value of Max Saving</div><div class="stat-val" id="sMaxVal">£45/wk</div></div>
+  <div class="stat"><div class="stat-label">Your hourly rate</div><div class="stat-val" id="sNetRate">£17.23/hr</div></div>
+  <div class="stat"><div class="stat-label">DIY active time/wk</div><div class="stat-val" id="sDIY">2.80 hrs</div></div>
+  <div class="stat"><div class="stat-label">Ready meal active/wk</div><div class="stat-val">0.18 hrs</div></div>
+  <div class="stat green"><div class="stat-label">Max time saveable</div><div class="stat-val" id="sSave">2.62 hrs/wk</div></div>
+  <div class="stat amber"><div class="stat-label">Value of max saving</div><div class="stat-val" id="sMaxVal">£45/wk</div></div>
 </div>
 
 <!-- TOP 3 -->
@@ -205,25 +210,25 @@
 <div class="card">
   <h2>Net Weekly Surplus vs DIY Farmfoods — comparing both shopping scenarios</h2>
   <div class="legend-row">
-    <div class="legend-item"><div class="ldot" style="background:#3fb950"></div>Parents / recurring order (0 shopping time)</div>
-    <div class="legend-item"><div class="ldot" style="background:#3fb95066;border:1px solid #3fb950"></div>You shop yourself (adds travel + in-store time)</div>
+    <div class="legend-item"><div class="ldot" style="background:#3fb950"></div>Delivered or recurring order (no shopping trip)</div>
+    <div class="legend-item"><div class="ldot" style="background:#3fb95066;border:1px solid #3fb950"></div>You do the shopping (adds the trip time)</div>
     <div class="legend-item"><div class="ldot" style="background:#f85149"></div>Not justified at selected time value</div>
     <div class="legend-item"><div class="ldot" style="background:#484f58"></div>Dominated</div>
   </div>
   <div style="position:relative;height:540px"><canvas id="surplusChart"></canvas></div>
-  <p class="note">Solid bar = parents/recurring shop (0 travel). Faded bar = you do the shopping (adds self-shopping time). Gap between them = value of not doing the shopping yourself. Positive = justified upgrade from DIY Farmfoods baseline.</p>
+  <p class="note">Solid bar = no shopping trip (delivered or recurring online order). Faded bar = you do the in-person shop (adds the trip time). Gap between them = value of skipping the trip yourself. Positive = justified upgrade from the DIY Farmfoods baseline.</p>
 </div>
 
 <div class="grid2">
   <div class="card">
-    <h2>Cost vs Active Time (parents shop scenario)</h2>
+    <h2>Cost vs Active Time (no shopping trip)</h2>
     <div style="position:relative;height:360px"><canvas id="scatter"></canvas></div>
-    <p class="note">Break-even line slope = your time value. Points below = better value than DIY Farmfoods.</p>
+    <p class="note">Break-even line slope = your hourly rate. Points below = better value than DIY Farmfoods. Hover any dot for the option name. Scroll to zoom in on clusters; shift+drag to pan; double-click to reset.</p>
   </div>
   <div class="card">
     <h2>Break-even Time Value Required (net £/hr) — fixed by costs</h2>
     <div style="position:relative;height:360px"><canvas id="barBreak"></canvas></div>
-    <p class="note">Your selected value shown as amber line. Green = justified now. Red = not yet.</p>
+    <p class="note">Each bar = the hourly rate at which the option becomes worthwhile. Amber line = your rate. Bars to the LEFT of the amber line are justified at your rate (coloured by category — see legend at top); bars to the RIGHT are red because they cost more than your time is worth.</p>
   </div>
 </div>
 
@@ -368,7 +373,10 @@ function minOrderWarning(opt) {
   if (weeklyMealCost >= min) return '';
   return `Min £${min}/order — your weekly spend is £${weeklyMealCost.toFixed(0)}`;
 }
-let COOK_MINS  = 8;
+let COOK_MINS  = (() => {
+  const v = parseInt(localStorage.getItem('meal_optimiser_cook_mins'));
+  return (isFinite(v) && v >= 0) ? v : 8;
+})();
 
 const CAT_COLOR = {
   DIY: '#d29922', MD: '#f0883e', SRM: '#3fb950', SVC: '#58a6ff',
@@ -419,10 +427,13 @@ function catColor(opt) {
 }
 
 // nonDominated() = options worth showing in charts/rankings.
-// Excludes both data-flagged "dominated" options AND user-marked-unavailable ones,
-// but always keeps the baseline so comparisons remain anchored.
+// Excludes user-marked-unavailable options, and excludes data-flagged
+// "dominated" ones unless the user has opted to show them. Baseline is
+// always retained so comparisons remain anchored.
 function nonDominated() {
-  return OPTS.filter(o => !o.dominated && (o.baseline || isAvailable(o)));
+  return OPTS.filter(o =>
+    (showDominated || !o.dominated) && (o.baseline || isAvailable(o))
+  );
 }
 
 // ═══════════════════════════════════
@@ -441,13 +452,13 @@ function buildCharts() {
       labels: sorted.map(o => o.label),
       datasets: [
         {
-          label: 'Parents / recurring (0 shopping)',
+          label: 'Delivered / no shopping trip',
           data: sorted.map(o => parseFloat(surplus(o, false).toFixed(1))),
           backgroundColor: sorted.map(o => surplusColor(surplus(o, false))),
           borderRadius: 3,
         },
         {
-          label: 'You shop yourself',
+          label: 'You do the shopping',
           data: sorted.map(o => parseFloat(surplus(o, true).toFixed(1))),
           backgroundColor: sorted.map(o => surplusColor(surplus(o, true)) + '66'),
           borderColor: sorted.map(o => surplusColor(surplus(o, true))),
@@ -495,14 +506,23 @@ function buildCharts() {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { title: ctx => ctx[0].dataset.label, label: ctx => `£${ctx.raw.y}/wk · ${ctx.raw.x.toFixed(2)} hrs active` } }
+        tooltip: { callbacks: { title: ctx => ctx[0].dataset.label, label: ctx => `£${ctx.raw.y.toFixed(0)}/wk · ${ctx.raw.x.toFixed(2)} hrs active` } },
+        zoom: {
+          pan:  { enabled: true, mode: 'xy', modifierKey: 'shift' },
+          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' },
+          limits: { x: { min: 0, max: 5 }, y: { min: 0, max: 300 } },
+        },
       },
       scales: {
-        x: { title:{display:true,text:'Weekly Active Time (hrs)',color:'#6e7681'}, grid:{color:'#21262d'}, ticks:{color:'#6e7681'}, min:0, max:3.5 },
+        x: { title:{display:true,text:'Weekly Active Time (hrs)  —  scroll to zoom · shift+drag to pan',color:'#6e7681'}, grid:{color:'#21262d'}, ticks:{color:'#6e7681'}, min:0, max:3.5 },
         y: { title:{display:true,text:'Weekly Cost (£)',color:'#6e7681'}, grid:{color:'#21262d'}, ticks:{color:'#6e7681',callback:v=>'£'+v}, min:0, max:240 },
       }
     },
-    plugins: [ptLabelPlugin],
+    // Removed ptLabelPlugin — labels were always-on and overlapped horribly
+    // when many options clustered at the same x-coordinate.  Tooltips on hover
+    // still show the option name (Chart.js default), and zoom + pan let the
+    // user dig into clusters.
+    plugins: [],
   });
 
   // break-even bar
@@ -613,20 +633,10 @@ function updateAll() {
   const baseCost = weeklyCost(OPTS.find(o=>o.baseline));
 
   // Stats
-  document.getElementById('sTV').textContent = `£${TIME_VALUE.toFixed(2)}/hr`;
+  document.getElementById('sNetRate').textContent = `£${NET_EMPLOYMENT.toFixed(2)}/hr`;
   document.getElementById('sDIY').textContent = `${diy.toFixed(2)} hrs`;
   document.getElementById('sSave').textContent = `${(diy - ready).toFixed(2)} hrs/wk`;
   document.getElementById('sMaxVal').textContent = `£${((diy-ready)*TIME_VALUE).toFixed(0)}/wk`;
-
-  // Slider labels
-  document.getElementById('tvDisplay').innerHTML = `£${TIME_VALUE.toFixed(2)}<small>/ hr net</small>`;
-  document.getElementById('cookDisplay').innerHTML = `${COOK_MINS}<small>min active</small>`;
-  const ratio = TIME_VALUE / NET_EMPLOYMENT;
-  document.getElementById('tvRef').textContent = Math.abs(ratio-1) < 0.03
-    ? `▲ Matches your hourly net rate (£${NET_EMPLOYMENT.toFixed(2)}/hr)`
-    : `▲ Your hourly net rate is £${NET_EMPLOYMENT.toFixed(2)}/hr — you're at ${ratio.toFixed(1)}×`;
-  document.getElementById('sNetRate').textContent = `£${NET_EMPLOYMENT.toFixed(2)}/hr`;
-  document.getElementById('cookRef').textContent = `21 × ${COOK_MINS} min = ${diy.toFixed(2)} hrs/wk active cooking`;
 
   // Top 3
   const ranked = OPTS.filter(o=>!o.baseline&&!o.dominated)
@@ -886,13 +896,18 @@ async function applyScrapedAverages() {
   }));
 }
 
+// ── Show "always worse" toggle (load from localStorage) ────────────────────
+const SHOW_DOM_LS = 'meal_optimiser_show_dominated';
+let showDominated = localStorage.getItem(SHOW_DOM_LS) === '1';
+
 // ── Boot ────────────────────────────────────────────────────────────────────
 async function init() {
-  document.getElementById('netRateInput').value = NET_EMPLOYMENT.toFixed(2);
-  document.getElementById('mealsInput').value   = MEALS;
-  document.getElementById('instoreInput').value = INSTORE_MINS;
-  document.getElementById('onlineInput').value  = ONLINE_MINS;
-  document.getElementById('tvSlider').value     = NET_EMPLOYMENT;
+  document.getElementById('netRateInput').value      = NET_EMPLOYMENT.toFixed(2);
+  document.getElementById('mealsInput').value        = MEALS;
+  document.getElementById('cookInput').value         = COOK_MINS;
+  document.getElementById('instoreInput').value      = INSTORE_MINS;
+  document.getElementById('onlineInput').value       = ONLINE_MINS;
+  document.getElementById('showDominatedInput').checked = showDominated;
 
   renderPerStoreTable();
   attachPerStoreHandlers();
@@ -904,6 +919,11 @@ async function init() {
 
   buildCharts();
   updateAll();
+
+  // Double-click anywhere on the scatter to reset zoom/pan
+  const scatterEl = document.getElementById('scatter');
+  scatterEl.addEventListener('dblclick', () => { if (scatterChart) scatterChart.resetZoom(); });
+
   window.__appReady = true;     // signal for tests / cross-tab listeners
 }
 init();
@@ -918,16 +938,12 @@ window.addEventListener('storage', async (e) => {
   updateAll();
 });
 
-document.getElementById('tvSlider').addEventListener('input', e => { TIME_VALUE = parseFloat(e.target.value); updateAll(); });
-document.getElementById('cookSlider').addEventListener('input', e => { COOK_MINS = parseInt(e.target.value); updateAll(); });
-
 document.getElementById('netRateInput').addEventListener('change', e => {
   const v = parseFloat(e.target.value);
   if (!v || v <= 0) return;
   NET_EMPLOYMENT = v;
+  TIME_VALUE = v;       // collapsed: rate IS the time value
   localStorage.setItem(LS.rate, v);
-  TIME_VALUE = v;
-  document.getElementById('tvSlider').value = v;
   updateAll();
 });
 document.getElementById('mealsInput').addEventListener('change', e => {
@@ -935,6 +951,14 @@ document.getElementById('mealsInput').addEventListener('change', e => {
   if (!v || v < 1) return;
   MEALS = v;
   localStorage.setItem(LS.meals, v);
+  updateAll();
+});
+document.getElementById('cookInput').addEventListener('change', e => {
+  const v = parseInt(e.target.value);
+  if (isNaN(v) || v < 0) return;
+  COOK_MINS = v;
+  // No localStorage key was wired before — add one so this persists like the rest.
+  localStorage.setItem('meal_optimiser_cook_mins', v);
   updateAll();
 });
 document.getElementById('instoreInput').addEventListener('change', e => {
@@ -952,6 +976,16 @@ document.getElementById('onlineInput').addEventListener('change', e => {
   if (isNaN(v) || v < 0) return;
   ONLINE_MINS = v;
   localStorage.setItem(LS.online, v);
+  updateAll();
+});
+document.getElementById('showDominatedInput').addEventListener('change', e => {
+  showDominated = e.target.checked;
+  localStorage.setItem(SHOW_DOM_LS, showDominated ? '1' : '0');
+  // Rebuild charts so the surplus/scatter/break-even datasets pick up the new set.
+  if (typeof surplusChart !== 'undefined' && surplusChart)  surplusChart.destroy();
+  if (typeof scatterChart !== 'undefined' && scatterChart)  scatterChart.destroy();
+  if (typeof breakChart   !== 'undefined' && breakChart)    breakChart.destroy();
+  buildCharts();
   updateAll();
 });
 </script>
