@@ -30,5 +30,8 @@ Thumbs.db
 .claude/
 CLAUDE.md.local
 
+# One-shot dev scripts (e.g. site-wide refactors)
+.dev-tools/
+
 # (scraper outputs and exclusions live in the sibling meal-optimiser-scrapers
 # repo now; nothing in this repo writes to disk at runtime)

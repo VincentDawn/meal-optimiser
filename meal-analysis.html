@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Meal Strategy — Interactive Analysis</title>
 <script src="meal-data.js"></script>
+<script src="assets/freshness.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
@@ -65,6 +66,20 @@
 </style>
 </head>
 <body>
+<!--
+  Shared site nav. Inlined into every page (no JS partials in a static site).
+  Keep markup IDENTICAL across pages — only the `aria-current` attribute moves
+  to mark the active page.
+-->
+<nav class="site-nav">
+  <a class="site-nav-brand" href="index.html">Meal Optimiser</a>
+  <a aria-current="page" href="meal-analysis.html">Dashboard</a>
+  <a href="tesco-filter.html">Tesco</a>
+  <a href="ms-filter.html">M&amp;S</a>
+  <a href="iceland-filter.html">Iceland</a>
+  <a href="parsleybox-filter.html">Parsley Box</a>
+</nav>
+
 
 <h1>Meal Strategy — Interactive Analysis</h1>
 <p class="sub">Compares ~25 ready-meal strategies on cost, calories, protein and active prep time · all your settings save in your browser</p>
@@ -85,13 +100,13 @@
   <h2>Your circumstances <span style="text-transform:none;color:#6e7681;font-weight:400">— saved in your browser</span></h2>
   <div class="yc-grid">
     <div class="yc-field">
-      <label for="netRateInput">Hourly rate (after tax)</label>
+      <label for="netRateInput">What your time is worth</label>
       <div class="yc-input-row">
         <span class="prefix">£</span>
         <input type="number" id="netRateInput" class="yc-input" min="1" max="500" step="0.01" value="17.23">
         <span class="suffix">/ hr</span>
       </div>
-      <div class="yc-hint">What your hour is actually worth. Drives every break-even calculation.</div>
+      <div class="yc-hint">Whatever number captures it — your post-tax wage, your freelance rate, or just what you'd pay to skip an hour of cooking. Drives every break-even.</div>
     </div>
     <div class="yc-field">
       <label for="mealsInput">Meals per week</label>
@@ -174,6 +189,7 @@
   <summary>Per-store settings — drive time, delivery fees, availability</summary>
   <div class="ps-body">
     <p style="font-size:0.74rem;color:#6e7681;margin-bottom:10px">Override defaults per option. Edits save automatically. Untick <em>Available?</em> for any service that doesn't deliver to your area — it'll drop out of the rankings.</p>
+    <p style="font-size:0.7rem;color:#6e7681;margin-bottom:10px">Scraped catalogue freshness: <span id="freshness-summary">loading…</span></p>
     <table class="ps-table" id="psTable">
       <thead>
         <tr>
@@ -923,6 +939,14 @@ async function init() {
   // Double-click anywhere on the scatter to reset zoom/pan
   const scatterEl = document.getElementById('scatter');
   scatterEl.addEventListener('dblclick', () => { if (scatterChart) scatterChart.resetZoom(); });
+
+  // Per-supplier freshness summary in the per-store settings disclosure
+  if (window.Freshness) {
+    Freshness.freshnessSummary().then(s => {
+      const el = document.getElementById('freshness-summary');
+      if (el) el.textContent = s || 'unknown';
+    });
+  }
 
   window.__appReady = true;     // signal for tests / cross-tab listeners
 }

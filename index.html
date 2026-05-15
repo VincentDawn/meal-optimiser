@@ -51,6 +51,20 @@
 </style>
 </head>
 <body>
+<!--
+  Shared site nav. Inlined into every page (no JS partials in a static site).
+  Keep markup IDENTICAL across pages — only the `aria-current` attribute moves
+  to mark the active page.
+-->
+<nav class="site-nav">
+  <a class="site-nav-brand" aria-current="page" href="index.html">Meal Optimiser</a>
+  <a href="meal-analysis.html">Dashboard</a>
+  <a href="tesco-filter.html">Tesco</a>
+  <a href="ms-filter.html">M&amp;S</a>
+  <a href="iceland-filter.html">Iceland</a>
+  <a href="parsleybox-filter.html">Parsley Box</a>
+</nav>
+
 
 <div class="wrap">
 
