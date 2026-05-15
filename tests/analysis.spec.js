@@ -38,6 +38,28 @@ test('cooking time input persists and recomputes diy active hours', async ({ pag
   expect(diy).toBeCloseTo(21 * 15 / 60, 3);
 });
 
+test('optimisation presets are rendered as pills with the default active', async ({ page }) => {
+  expect(await page.locator('.opt-pill').count()).toBe(6);
+  await expect(page.locator('.opt-pill.active')).toHaveText('Best surplus vs DIY');
+});
+
+test('switching preset persists, re-renders top-3, and changes the leader', async ({ page }) => {
+  const surplusLeader = await page.locator('.top3-card').first().locator('.medal-name').textContent();
+  // "Highest protein" is a genuinely different objective from "Best surplus" —
+  // the protein leader is one of the meal-prep delivery services, not a cheap
+  // ready meal — so the leader should change.
+  await page.locator('.opt-pill[data-preset="highestProtein"]').click();
+  await expect(page.locator('.opt-pill.active')).toHaveText('Highest protein/meal');
+  const proteinLeader = await page.locator('.top3-card').first().locator('.medal-name').textContent();
+  expect(proteinLeader).not.toBe(surplusLeader);
+  // Persisted
+  expect(await page.evaluate(() => localStorage.getItem('meal_optimiser_preset'))).toBe('highestProtein');
+  // Reload preserves
+  await page.reload();
+  await page.waitForFunction(() => window.__appReady === true);
+  await expect(page.locator('.opt-pill.active')).toHaveText('Highest protein/meal');
+});
+
 test('show-dominated toggle reveals filtered options in nonDominated()', async ({ page }) => {
   const before = await page.evaluate(() => nonDominated().some(o => o.dominated));
   expect(before).toBe(false);

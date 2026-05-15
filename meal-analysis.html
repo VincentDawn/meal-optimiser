@@ -84,6 +84,26 @@
 <h1>Meal Strategy — Interactive Analysis</h1>
 <p class="sub">Compares ~25 ready-meal strategies on cost, calories, protein and active prep time · all your settings save in your browser</p>
 
+<!-- OPTIMISATION GOAL -->
+<style>
+  .opt-panel { background:#161b22; border:1px solid #30363d; border-radius:10px; padding:14px 22px; margin-bottom:20px; }
+  .opt-panel h2 { font-size:0.78rem; color:#8b949e; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:10px; }
+  .opt-pills { display:flex; flex-wrap:wrap; gap:6px; }
+  .opt-pill {
+    background:#0d1117; color:#cdd9e5; border:1px solid #30363d; border-radius:999px;
+    padding:6px 14px; font-size:0.78rem; cursor:pointer; transition:all 0.1s;
+    user-select:none;
+  }
+  .opt-pill:hover { border-color:#58a6ff; color:#fff; }
+  .opt-pill.active { background:#1f3756; border-color:#58a6ff; color:#fff; font-weight:600; }
+  .opt-hint { font-size:0.72rem; color:#6e7681; margin-top:8px; line-height:1.4; }
+</style>
+<div class="opt-panel">
+  <h2>Optimise rankings for</h2>
+  <div class="opt-pills" id="optPills"></div>
+  <div class="opt-hint" id="optHint"></div>
+</div>
+
 <!-- PERSONAL CIRCUMSTANCES -->
 <style>
   .yc-panel { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px 22px; margin-bottom: 20px; }
@@ -257,9 +277,9 @@
         <th>Option</th>
         <th>£/meal</th>
         <th>£/wk</th>
-        <th>Active time (parents)</th>
+        <th>Active time (no trip)</th>
         <th>Active time (self-shop)</th>
-        <th>Surplus (parents)</th>
+        <th>Surplus (no trip)</th>
         <th>Surplus (self-shop)</th>
         <th>Break-even net</th>
         <th>Kcal/meal</th>
@@ -654,19 +674,19 @@ function updateAll() {
   document.getElementById('sSave').textContent = `${(diy - ready).toFixed(2)} hrs/wk`;
   document.getElementById('sMaxVal').textContent = `£${((diy-ready)*TIME_VALUE).toFixed(0)}/wk`;
 
-  // Top 3
-  const ranked = OPTS.filter(o=>!o.baseline&&!o.dominated)
-    .map(o=>({...o, s: surplus(o,false)})).filter(o=>o.s>0)
-    .sort((a,b)=>b.s-a.s);
+  // Top 3 — ranked by the user's chosen preset
+  const preset = PRESETS[currentPreset];
+  const eligible = OPTS.filter(o => !o.baseline && (showDominated || !o.dominated) && isAvailable(o));
+  const ranked = rankByPreset(eligible).filter(r => r.s != null);
   const medals=['🥇','🥈','🥉'], cls=['gold','silver','bronze'];
-  document.getElementById('top3').innerHTML = ranked.slice(0,3).map((o,i) =>
+  document.getElementById('top3').innerHTML = ranked.slice(0,3).map(({opt: o}, i) =>
     `<div class="top3-card ${cls[i]}">
       <div class="medal">${medals[i]}</div>
       <div class="medal-name">${o.label}</div>
-      <div class="medal-surplus">+£${o.s.toFixed(0)}/wk surplus</div>
-      <div class="medal-stat">£${o.costPerMeal?.toFixed(2)||'?'}/meal · BE: £${beNet(o)?.toFixed(2)||'?'}/hr net</div>
+      <div class="medal-surplus">${preset.fmt(preset.score(o))}</div>
+      <div class="medal-stat">£${o.costPerMeal?.toFixed(2)||'?'}/meal · ${o.protein != null ? o.protein.toFixed(1)+'g protein' : ''} · ${o.calories != null ? o.calories+' kcal' : ''}</div>
     </div>`
-  ).join('') || '<div style="color:#f85149;font-size:0.85rem;padding:12px">No options justified at this time value.</div>';
+  ).join('') || '<div style="color:#f85149;font-size:0.85rem;padding:12px">No options match this objective with the current data.</div>';
 
   // Surplus chart update
   const sorted = nonDominated().filter(o=>!o.baseline)
@@ -696,15 +716,19 @@ function updateAll() {
   breakChart.data.datasets[0].backgroundColor = beData.map(o=>beColor(o));
   breakChart.update('none');
 
-  // Table
+  // Table — within each category section, sort options by the chosen preset
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = '';
   ['DIY','MD','SRM','SVC'].forEach(sec => {
     const secOpts = OPTS.filter(o=>o.category===sec);
+    // Baseline options stay first; everything else sorted by preset score
+    const baselines = secOpts.filter(o => o.baseline);
+    const others    = rankByPreset(secOpts.filter(o => !o.baseline)).map(r => r.opt);
+    const sorted    = [...baselines, ...others];
     const hdr = document.createElement('tr'); hdr.className='sec';
     hdr.innerHTML = `<td colspan="14">${CAT_LABEL[sec]}</td>`;
     tbody.appendChild(hdr);
-    secOpts.forEach(opt => {
+    sorted.forEach(opt => {
       const be = beNet(opt);
       const sp = surplus(opt, false);
       const spSelf = surplus(opt, true);
@@ -916,6 +940,80 @@ async function applyScrapedAverages() {
 const SHOW_DOM_LS = 'meal_optimiser_show_dominated';
 let showDominated = localStorage.getItem(SHOW_DOM_LS) === '1';
 
+// ── Optimisation presets ────────────────────────────────────────────────────
+// Each preset returns a score for an option; higher = better (we always
+// sort descending).  null score = "no data" — those rows sink to the bottom.
+const PRESETS = {
+  surplus: {
+    label: 'Best surplus vs DIY',
+    hint:  'Cost saved + time saved (priced at your hourly rate) versus the DIY Farmfoods baseline. The default — uses the same maths as the surplus chart.',
+    score: opt => opt.baseline ? null : surplus(opt, false),
+    fmt:   s => s == null ? '—' : (s >= 0 ? `+£${s.toFixed(0)}/wk` : `-£${Math.abs(s).toFixed(0)}/wk`),
+  },
+  cheapest: {
+    label: 'Cheapest weekly',
+    hint:  'Lowest total weekly cost, ignoring time spent.',
+    score: opt => -weeklyCost(opt),
+    fmt:   s => `£${(-s).toFixed(0)}/wk`,
+  },
+  proteinPerPound: {
+    label: 'Most protein per £',
+    hint:  'Maximise grams of protein per pound spent. Skips options without protein data.',
+    score: opt => (opt.protein && opt.costPerMeal) ? opt.protein / opt.costPerMeal : null,
+    fmt:   s => s == null ? '—' : `${s.toFixed(1)} g/£`,
+  },
+  kcalPerPound: {
+    label: 'Most calories per £',
+    hint:  'Maximise calories per pound spent. Useful if "more food = better".',
+    score: opt => (opt.calories && opt.costPerMeal) ? opt.calories / opt.costPerMeal : null,
+    fmt:   s => s == null ? '—' : `${Math.round(s)} kcal/£`,
+  },
+  highestProtein: {
+    label: 'Highest protein/meal',
+    hint:  'Most grams of protein per meal regardless of price.',
+    score: opt => opt.protein ?? null,
+    fmt:   s => s == null ? '—' : `${s.toFixed(1)} g/meal`,
+  },
+  leastTime: {
+    label: 'Least active time',
+    hint:  'Minimise active time spent per week (cooking + shopping).',
+    score: opt => -activeHrs(opt, true),
+    fmt:   s => `${(-s).toFixed(2)} hr/wk`,
+  },
+};
+
+const PRESET_LS = 'meal_optimiser_preset';
+let currentPreset = PRESETS[localStorage.getItem(PRESET_LS)] ? localStorage.getItem(PRESET_LS) : 'surplus';
+
+function rankByPreset(opts) {
+  const p = PRESETS[currentPreset];
+  return opts
+    .map(o => ({ opt: o, s: p.score(o) }))
+    .sort((a, b) => {
+      // null scores sink to bottom
+      if (a.s == null && b.s == null) return 0;
+      if (a.s == null) return 1;
+      if (b.s == null) return -1;
+      return b.s - a.s;
+    });
+}
+
+function renderOptPills() {
+  const wrap = document.getElementById('optPills');
+  wrap.innerHTML = Object.entries(PRESETS).map(([key, p]) =>
+    `<button type="button" class="opt-pill ${key === currentPreset ? 'active' : ''}" data-preset="${key}">${p.label}</button>`
+  ).join('');
+  document.getElementById('optHint').textContent = PRESETS[currentPreset].hint;
+  wrap.querySelectorAll('.opt-pill').forEach(b => {
+    b.addEventListener('click', () => {
+      currentPreset = b.dataset.preset;
+      localStorage.setItem(PRESET_LS, currentPreset);
+      renderOptPills();
+      updateAll();
+    });
+  });
+}
+
 // ── Boot ────────────────────────────────────────────────────────────────────
 async function init() {
   document.getElementById('netRateInput').value      = NET_EMPLOYMENT.toFixed(2);
@@ -925,6 +1023,7 @@ async function init() {
   document.getElementById('onlineInput').value       = ONLINE_MINS;
   document.getElementById('showDominatedInput').checked = showDominated;
 
+  renderOptPills();
   renderPerStoreTable();
   attachPerStoreHandlers();
 
