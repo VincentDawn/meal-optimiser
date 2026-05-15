@@ -46,8 +46,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0      # full history so gitleaks can scan all commits
-      - name: Scan for secrets
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0      # full history so we can scan all commits
+      # Run gitleaks directly rather than the marketplace action — the action
+      # tries to do incremental scans based on the previous push's SHA, which
+      # blows up after any history-rewrite force-push.  Direct invocation
+      # always scans the whole repo + history.
+      - name: Install gitleaks
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz \
+            | tar -xz -C /tmp
+          /tmp/gitleaks version
+      - name: Scan repo + git history
+        run: /tmp/gitleaks detect --source=. --verbose --no-banner --redact
