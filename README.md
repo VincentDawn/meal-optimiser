@@ -1,8 +1,11 @@
 # Meal Optimiser
 
 Decision-support tool for choosing the most cost-effective UK ready-meal strategy.
+**Live: https://vincentdawn.github.io/meal-optimiser/**
 
 The headline question: **at what hourly rate does each option become worthwhile?** It compares ~25 strategies — DIY supermarket cooking, frozen ready meals (Tesco, M&S, Iceland, Aldi, Lidl, Farmfoods), and Scotland-focused meal-prep delivery services (Diced, Riba, OuiPrep, Parsley Box, Wiltshire Farm Foods, etc.) — across cost, calories, protein and active prep time.
+
+![Meal Optimiser dashboard](assets/dashboard-screenshot.png)
 
 ## Live site
 

@@ -8,10 +8,10 @@
     const then = new Date(iso);
     if (isNaN(then.getTime())) return '?';
     const days = Math.floor((Date.now() - then.getTime()) / 86_400_000);
-    if (days < 1)   return 'today';
+    if (days < 1) return 'today';
     if (days === 1) return 'yesterday';
-    if (days < 14)  return `${days} days ago`;
-    if (days < 60)  return `${Math.floor(days / 7)} weeks ago`;
+    if (days < 14) return `${days} days ago`;
+    if (days < 60) return `${Math.floor(days / 7)} weeks ago`;
     return `${Math.floor(days / 30)} months ago`;
   }
 
@@ -22,7 +22,9 @@
     return d.toISOString().slice(0, 10);
   }
 
-  function format(iso) { return `${absolute(iso)} (${relative(iso)})`; }
+  function format(iso) {
+    return `${absolute(iso)} (${relative(iso)})`;
+  }
 
   // Promise resolving to the parsed _meta object; cached so each page only
   // hits the network once even if multiple consumers ask.
@@ -30,7 +32,7 @@
   function loadMeta() {
     if (!metaPromise) {
       metaPromise = fetch('data/_meta.json', { cache: 'no-store' })
-        .then(r => r.ok ? r.json() : null)
+        .then(r => (r.ok ? r.json() : null))
         .catch(() => null);
     }
     return metaPromise;
@@ -42,8 +44,8 @@
     const meta = await loadMeta();
     if (!meta || !meta.suppliers) return;
     document.querySelectorAll('.last-refreshed').forEach(el => {
-      const key = el.dataset.supplier
-                || location.pathname.split('/').pop().replace('-filter.html', '');
+      const key =
+        el.dataset.supplier || location.pathname.split('/').pop().replace('-filter.html', '');
       const s = meta.suppliers[key];
       el.textContent = s ? format(s.scraped_at) : '?';
     });

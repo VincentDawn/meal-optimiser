@@ -89,7 +89,10 @@ test('Per-option drive override takes precedence over global', async ({ page }) 
     setOverride('rm_aldi', 'driveTimeMins', 45);
     const after = activeHrs(aldi, true);
     // Sanity: another in-store option without override still uses global
-    const farmfoodsAfter = activeHrs(OPTS.find(o => o.id === 'diy_farmfoods'), true);
+    const farmfoodsAfter = activeHrs(
+      OPTS.find(o => o.id === 'diy_farmfoods'),
+      true
+    );
     const farmfoodsBefore = (() => {
       // Recompute farmfoods with no override — should use global INSTORE_MINS unchanged
       const ff = OPTS.find(o => o.id === 'diy_farmfoods');
@@ -128,7 +131,10 @@ test('Baseline option is always retained even if marked unavailable', async ({ p
 test('Surplus calc references weeklyCost(opt) not opt.weeklyCost', async ({ page }) => {
   const result = await page.evaluate(() => {
     const tesco = OPTS.find(o => o.id === 'rm_tesco');
-    const baselineSurplus = surplus(OPTS.find(o => o.baseline), false);
+    const baselineSurplus = surplus(
+      OPTS.find(o => o.baseline),
+      false
+    );
     const tescoSurplus = surplus(tesco, false);
     return { baselineSurplus, tescoSurplus };
   });

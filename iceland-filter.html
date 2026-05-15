@@ -1,407 +1,236 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Iceland — Filter</title>
-<link rel="stylesheet" href="assets/filter.css">
-<script src="assets/freshness.js" defer></script>
-</head>
-<body>
-<!--
+  <head>
+    <meta charset="UTF-8" />
+    <title>Iceland — Filter</title>
+    <link rel="stylesheet" href="assets/filter.css" />
+    <script src="assets/freshness.js" defer></script>
+  </head>
+  <body>
+    <!--
   Shared site nav. Inlined into every page (no JS partials in a static site).
   Keep markup IDENTICAL across pages — only the `aria-current` attribute moves
   to mark the active page.
 -->
-<nav class="site-nav">
-  <a class="site-nav-brand" href="index.html">Meal Optimiser</a>
-  <a href="meal-analysis.html">Dashboard</a>
-  <a href="tesco-filter.html">Tesco</a>
-  <a href="ms-filter.html">M&amp;S</a>
-  <a aria-current="page" href="iceland-filter.html">Iceland</a>
-  <a href="parsleybox-filter.html">Parsley Box</a>
-</nav>
-<h1>Iceland Frozen Ready Meals — Filter Tool</h1>
-<p class="page-sub">Data last refreshed: <span class="ts last-refreshed">loading...</span></p>
-<div id="stats">
-  <div class="stat"><div class="val" id="s-count">—</div><div class="lbl">meals kept</div></div>
-  <div class="sep"></div>
-  <div class="stat"><div class="val" id="s-price">—</div><div class="lbl">avg price (deal)</div></div>
-  <div class="sep"></div>
-  <div class="stat"><div class="val" id="s-kcal">—</div><div class="lbl">avg kcal</div></div>
-  <div class="sep"></div>
-  <div class="stat"><div class="val" id="s-protein">—</div><div class="lbl">avg protein</div></div>
-  <div class="sep"></div>
-  <div class="stat"><div class="val" id="s-cpp">—</div><div class="lbl">£/g protein</div></div>
-</div>
-<div id="controls">
-  <input type="text" id="search" placeholder="Filter by name…" oninput="applyFilter()">
-  <button onclick="selectAll(false)">Restore all</button>
-  <button class="danger" onclick="selectAll(true)">Exclude all visible</button>
-  <span id="excluded-count"></span>
-</div>
-<table id="tbl">
-  <thead>
-    <tr>
-      <th class="excl">✕</th>
-      <th onclick="sortBy('name')">Name</th>
-      <th onclick="sortBy('size')">Size</th>
-      <th onclick="sortBy('price')">Price</th>
-      <th onclick="sortBy('effP')">Deal price</th>
-      <th onclick="sortBy('kcal')">Kcal</th>
-      <th onclick="sortBy('protein')">Protein</th>
-      <th onclick="sortBy('ppp')">£/protein g</th>
-      <th onclick="sortBy('pkc')">p/kcal</th>
-      <th onclick="sortBy('score')">Score</th>
-    </tr>
-  </thead>
-  <tbody id="tbody"></tbody>
-</table>
-<script>
-const KEY = 'iceland';
-const products = [
-  {"id":"41449","name":"Slimming World Marry Me Chicken Pasta 550g","price":4.5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":517,"protein":51.7,"slug":"slimming-world-marry-me-chicken-pasta-550g"},
-  {"id":"95192","name":"Iceland Beef Lasagne 400g","price":2.5,"dealStr":"3 for \u00a36.00","size":"400g","kcal":456,"protein":23.3,"slug":"iceland-beef-lasagne-400g"},
-  {"id":"94958","name":"Myprotein Hunters BBQ Chicken Pasta 550g","price":4.75,"dealStr":"5 for \u00a320.00","size":"550g","kcal":675,"protein":67.5,"slug":"myprotein-hunters-bbq-chicken-pasta-550g"},
-  {"id":"91565","name":"Cathedral City Our Cheesy Cottage Pie 400g","price":4.25,"dealStr":"4 for \u00a315.00","size":"400g","kcal":570,"protein":31.9,"slug":"cathedral-city-our-cheesy-cottage-pie-400g"},
-  {"id":"68886","name":"Iceland Luxury Steak in Ale with Cobblers 400g","price":3.75,"dealStr":"3 for \u00a310.00","size":"400g","kcal":490,"protein":36.7,"slug":"iceland-luxury-steak-in-ale-with-cobblers-400g"},
-  {"id":"83842","name":"Iceland Lasagne 400g","price":1.15,"dealStr":"5 for \u00a35.00","size":"400g","kcal":563,"protein":24.4,"slug":"iceland-lasagne-400g"},
-  {"id":"95472","name":"Myprotein Salt & Pepper Chicken with Rice 350g","price":4.25,"dealStr":"5 for \u00a317.00","size":"350g","kcal":370,"protein":43.4,"slug":"myprotein-salt-and-pepper-chicken-with-rice-350g"},
-  {"id":"91810","name":"Iceland Bolognese Pasta Bake 400g","price":2.5,"dealStr":"3 for \u00a36.00","size":"400g","kcal":525,"protein":33.3,"slug":"iceland-bolognese-pasta-bake-400g"},
-  {"id":"48313","name":"Slimming World Chicken & Mushroom Ramen 550g","price":4.5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":413,"protein":39.6,"slug":"slimming-world-chicken-and-mushroom-ramen-550g"},
-  {"id":"83795","name":"Iceland Chicken Curry with Rice 400g","price":1.15,"dealStr":"5 for \u00a35.00","size":"400g","kcal":495,"protein":31.7,"slug":"iceland-chicken-curry-with-rice-400g"},
-  {"id":"92366","name":"Slimming World Sweet and Sour Chicken 500g","price":4.5,"dealStr":"5 for \u00a320.00","size":"500g","kcal":300,"protein":39,"slug":"slimming-world-sweet-and-sour-chicken-500g"},
-  {"id":"41459","name":"Iceland Spaghetti Bolognese 400g","price":1.15,"dealStr":"5 for \u00a35.00","size":"400g","kcal":432,"protein":17.7,"slug":"iceland-spaghetti-bolognese-400g"},
-  {"id":"51319","name":"Iceland Macaroni Cheese Pasta 400g","price":1.15,"dealStr":"5 for \u00a35.00","size":"400g","kcal":465,"protein":15.6,"slug":"iceland-macaroni-cheese-pasta-400g"},
-  {"id":"48315","name":"Slimming World Hunter’s Chicken Pasta 550g","price":4.5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":583,"protein":57.2,"slug":"slimming-world-hunters-chicken-pasta-550g"},
-  {"id":"95193","name":"Iceland Minced Beef Hot Pot 400g","price":2.5,"dealStr":"3 for \u00a36.00","size":"400g","kcal":329,"protein":18.6,"slug":"iceland-minced-beef-hot-pot-400g"},
-  {"id":"95009","name":"Iceland Cottage Pie 400g","price":2.5,"dealStr":"3 for \u00a36.00","size":"400g","kcal":463,"protein":24.1,"slug":"iceland-cottage-pie-400g"},
-  {"id":"87077","name":"Iceland Takeaway Chicken Tikka Masala 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":486,"protein":27.6,"slug":"iceland-takeaway-chicken-tikka-masala-375g"},
-  {"id":"87461","name":"Iceland Takeaway Chicken Chow Mein 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":361,"protein":26.4,"slug":"iceland-takeaway-chicken-chow-mein-375g"},
-  {"id":"93523","name":"Iceland Chilli Con Carne with Rice 400g","price":2.5,"dealStr":"3 for \u00a36.00","size":"400g","kcal":369,"protein":18.9,"slug":"iceland-chilli-con-carne-with-rice-400g"},
-  {"id":"87078","name":"Iceland Takeaway Chicken Korma 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":493,"protein":33.7,"slug":"iceland-takeaway-chicken-korma-375g"},
-  {"id":"83796","name":"Iceland Sweet & Sour Chicken with Rice 400g","price":1.15,"dealStr":"5 for \u00a35.00","size":"400g","kcal":543,"protein":21.6,"slug":"iceland-sweet-and-sour-chicken-with-rice-400g"},
-  {"id":"93522","name":"Iceland Bangers & Mash with Onion Gravy 400g","price":2.5,"dealStr":"3 for \u00a36.00","size":"400g","kcal":398,"protein":22.6,"slug":"iceland-bangers-and-mash-with-onion-gravy-400g"},
-  {"id":"83160","name":"Iceland Cheese & Tomato Pasta 400g","price":1.15,"dealStr":"5 for \u00a35.00","size":"400g","kcal":559,"protein":23.1,"slug":"iceland-cheese-and-tomato-pasta-400g"},
-  {"id":"67663","name":"Iceland Ham & Mushroom Tagliatelle 400g","price":2.5,"dealStr":"3 for \u00a36.00","size":"400g","kcal":400,"protein":19.5,"slug":"iceland-ham-and-mushroom-tagliatelle-400g"},
-  {"id":"87079","name":"Iceland Takeaway Creamy Butter Chicken 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":445,"protein":27.2,"slug":"iceland-takeaway-creamy-butter-chicken-375g"},
-  {"id":"41660","name":"Iceland Toad in the Hole 300g","price":1.15,"dealStr":"5 for \u00a35.00","size":"300g","kcal":524,"protein":28.9,"slug":"iceland-toad-in-the-hole-300g"},
-  {"id":"83843","name":"Iceland Cottage Pie 400g","price":1.15,"dealStr":"5 for \u00a35.00","size":"400g","kcal":384,"protein":14.3,"slug":"iceland-cottage-pie-400g"},
-  {"id":"67664","name":"Iceland Chicken & Bacon Pasta 400g","price":2.5,"dealStr":"3 for \u00a36.00","size":"400g","kcal":449,"protein":27.6,"slug":"iceland-chicken-and-bacon-pasta-400g"},
-  {"id":"33983","name":"Cathedral City Our Cheesy Lasagne 400g","price":4.25,"dealStr":"4 for \u00a315.00","size":"400g","kcal":688,"protein":37.8,"slug":"cathedral-city-our-cheesy-lasagne-400g"},
-  {"id":"94951","name":"Iceland Liver & Bacon with Mash 400g","price":2.5,"dealStr":"3 for \u00a36.00","size":"400g","kcal":533,"protein":44,"slug":"iceland-liver-and-bacon-with-mash-400g"},
-  {"id":"94926","name":"Iceland Chinese Chicken & Rice 400g","price":1.15,"dealStr":"5 for \u00a35.00","size":"400g","kcal":460,"protein":15.5,"slug":"iceland-chinese-chicken-and-rice-400g"},
-  {"id":"94857","name":"Iceland Haddock & Salmon Fish Pie 400g","price":2.5,"dealStr":"3 for \u00a36.00","size":"400g","kcal":402,"protein":30.6,"slug":"iceland-haddock-and-salmon-fish-pie-400g"},
-  {"id":"87460","name":"Iceland Sweet and Sour Chicken 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":446,"protein":36.9,"slug":"iceland-sweet-and-sour-chicken-375g"},
-  {"id":"91811","name":"Iceland Meatballs & Pasta 400g","price":2.5,"dealStr":"3 for \u00a36.00","size":"400g","kcal":462,"protein":21.4,"slug":"iceland-meatballs-and-pasta-400g"},
-  {"id":"68883","name":"Iceland Luxury Steak & Chianti Casserole with Cheddar Mash 450g","price":3.75,"dealStr":"3 for \u00a310.00","size":"450g","kcal":498,"protein":33.2,"slug":"iceland-luxury-steak-and-chianti-casserole-with-cheddar-mash-450g"},
-  {"id":"94856","name":"Iceland Sustainably Sourced Fish Pie 300g","price":1.15,"dealStr":"5 for \u00a35.00","size":"300g","kcal":301,"protein":11.4,"slug":"iceland-sustainably-sourced-fish-pie-300g"},
-  {"id":"87448","name":"Iceland Takeaway Chinese Chicken Curry 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":331,"protein":33.9,"slug":"iceland-takeaway-chinese-chicken-curry-375g"},
-  {"id":"17331","name":"Iceland Char Siu Pork & Noodles 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":535,"protein":19.1,"slug":"iceland-char-siu-pork-and-noodles-375g"},
-  {"id":"87458","name":"Iceland Takeaway Chicken Biryani 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":532,"protein":26.5,"slug":"iceland-takeaway-chicken-biryani-375g"},
-  {"id":"50701","name":"Iceland Beef & Yorkshire Pudding Roast Dinner 450g","price":2.65,"dealStr":null,"size":"450g","kcal":428,"protein":23.1,"slug":"iceland-beef-and-yorkshire-pudding-roast-dinner-450g"},
-  {"id":"37362","name":"Myprotein Sticky Honey, Ginger & Sesame Chicken with Rice 350g","price":4.25,"dealStr":"5 for \u00a317.00","size":"350g","kcal":410,"protein":40.1,"slug":"myprotein-sticky-honey-ginger-and-sesame-chicken-with-rice-350g"},
-  {"id":"95077","name":"Iceland Savoury Golden Rice & Chicken 350g","price":1.15,"dealStr":"5 for \u00a35.00","size":"350g","kcal":420,"protein":14,"slug":"iceland-savoury-golden-rice-and-chicken-350g"},
-  {"id":"87085","name":"Iceland Special Fried Rice 350g","price":2.5,"dealStr":"3 for \u00a36.00","size":"350g","kcal":488,"protein":18,"slug":"iceland-special-fried-rice-350g"},
-  {"id":"95196","name":"Iceland Penne Carbonara 350g","price":1.15,"dealStr":"5 for \u00a35.00","size":"350g","kcal":487,"protein":19.6,"slug":"iceland-penne-carbonara-350g"},
-  {"id":"95194","name":"Iceland Spaghetti Bolognese 400g","price":2.5,"dealStr":"3 for \u00a36.00","size":"400g","kcal":435,"protein":24.3,"slug":"iceland-spaghetti-bolognese-400g"},
-  {"id":"40329","name":"Iceland Tuna Pasta Bake 400g","price":1.15,"dealStr":"5 for \u00a35.00","size":"400g","kcal":543,"protein":22,"slug":"iceland-tuna-pasta-bake-400g"},
-  {"id":"92572","name":"Myprotein Meat Feast Pasta 550g","price":4.75,"dealStr":"5 for \u00a320.00","size":"550g","kcal":581,"protein":66.2,"slug":"myprotein-meat-feast-pasta-550g"},
-  {"id":"81373","name":"Iceland Luxury Chicken Tikka Masala 400g","price":3.75,"dealStr":"3 for \u00a310.00","size":"400g","kcal":514,"protein":41.7,"slug":"iceland-luxury-chicken-tikka-masala-400g"},
-  {"id":"50699","name":"Iceland Chicken & Stuffing Roast Dinner 450g","price":2.65,"dealStr":null,"size":"450g","kcal":428,"protein":40.2,"slug":"iceland-chicken-and-stuffing-roast-dinner-450g"},
-  {"id":"101721","name":"Birds Eye Steamfresh Creamy Cheese Vegetable Pasta Meal for 1 400g","price":1.75,"dealStr":null,"size":"400g","kcal":521,"protein":20,"slug":"birds-eye-steamfresh-creamy-cheese-vegetable-pasta-meal-for-1-400g"},
-  {"id":"40990","name":"Myprotein Hot Honey Chicken Mac & Cheese with Pepperoni 350g","price":4.25,"dealStr":"5 for \u00a317.00","size":"350g","kcal":420,"protein":43.4,"slug":"myprotein-hot-honey-chicken-mac-and-cheese-with-pepperoni-350g"},
-  {"id":"92576","name":"Myprotein Beef Pasta Bolognese 350g","price":4.25,"dealStr":"5 for \u00a317.00","size":"350g","kcal":433,"protein":40.2,"slug":"myprotein-beef-pasta-bolognese-350g"},
-  {"id":"88084","name":"Cathedral City Our Mac 'n' Cheese 400g","price":4.25,"dealStr":"4 for \u00a315.00","size":"400g","kcal":852,"protein":38.4,"slug":"cathedral-city-our-mac-n-cheese-400g"},
-  {"id":"59645","name":"Iceland Beef and Pancetta al Forno Lasagne 450g","price":3.75,"dealStr":"3 for \u00a310.00","size":"450g","kcal":769,"protein":46.7,"slug":"iceland-beef-and-pancetta-al-forno-lasagne-450g"},
-  {"id":"92513","name":"Myprotein Chicken Tikka With Rice 350g","price":4.25,"dealStr":"5 for \u00a317.00","size":"350g","kcal":364,"protein":37.4,"slug":"myprotein-chicken-tikka-with-rice-350g"},
-  {"id":"95197","name":"Iceland Tomato Chicken Pasta 350g","price":1.15,"dealStr":"5 for \u00a35.00","size":"350g","kcal":429,"protein":20.7,"slug":"iceland-tomato-chicken-pasta-350g"},
-  {"id":"84056","name":"Slimming World Beef Lasagne 550g","price":4.5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":495,"protein":53.9,"slug":"slimming-world-beef-lasagne-550g"},
-  {"id":"37464","name":"Myprotein Chicken & Beef Burrito Bowl 450g","price":4.75,"dealStr":"5 for \u00a320.00","size":"450g","kcal":540,"protein":54.9,"slug":"myprotein-chicken-and-beef-burrito-bowl-450g"},
-  {"id":"18754","name":"Slimming World Chicken Carbonara 550g","price":4.5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":605,"protein":55.6,"slug":"slimming-world-chicken-carbonara-550g"},
-  {"id":"57996","name":"Slimming World Chicken Tikka Masala 500g","price":4.5,"dealStr":"5 for \u00a320.00","size":"500g","kcal":360,"protein":53.5,"slug":"slimming-world-chicken-tikka-masala-500g"},
-  {"id":"92569","name":"Myprotein Katsu Chicken with Rice 350g","price":4.25,"dealStr":"5 for \u00a317.00","size":"350g","kcal":456,"protein":26.1,"slug":"myprotein-katsu-chicken-with-rice-350g"},
-  {"id":"19533","name":"TGI Fridays Chorizo Mac & Nacho Cheese 400g","price":4.25,"dealStr":"4 for \u00a315.00","size":"400g","kcal":743,"protein":38.8,"slug":"tgi-fridays-chorizo-mac-and-nacho-cheese-400g"},
-  {"id":"48240","name":"Myprotein Meatball Marinara 500g","price":4.75,"dealStr":"5 for \u00a320.00","size":"500g","kcal":540,"protein":46.9,"slug":"myprotein-meatball-marinara-500g"},
-  {"id":"79236","name":"Slimming World Beef Tagliatelle 550g","price":4.5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":468,"protein":31.9,"slug":"slimming-world-beef-tagliatelle-550g"},
-  {"id":"37350","name":"Slimming World Meat Feast Pasta 550g","price":5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":495,"protein":47.8,"slug":"slimming-world-meat-feast-pasta-550g"},
-  {"id":"48220","name":"Myprotein Naked Cheesy Chicken Fajita with Rice 350g","price":4.25,"dealStr":"5 for \u00a317.00","size":"350g","kcal":350,"protein":35.5,"slug":"myprotein-naked-cheesy-chicken-fajita-with-rice-350g"},
-  {"id":"72144","name":"Slimming World Korean-Style Beef Noodles 550g","price":5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":435,"protein":36.9,"slug":"slimming-world-korean-style-beef-noodles-550g"},
-  {"id":"95198","name":"Iceland Curry Chicken Rice 350g","price":1.15,"dealStr":"5 for \u00a35.00","size":"350g","kcal":325,"protein":12.5,"slug":"iceland-curry-chicken-rice-350g"},
-  {"id":"94956","name":"Myprotein Cajun Chicken Pasta 550g","price":4.75,"dealStr":"5 for \u00a320.00","size":"550g","kcal":609,"protein":64.2,"slug":"myprotein-cajun-chicken-pasta-550g"},
-  {"id":"75366","name":"Slimming World Braised Steak and Root Veg Mash 550g","price":4.5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":341,"protein":43.5,"slug":"slimming-world-braised-steak-and-root-veg-mash-550g"},
-  {"id":"48161","name":"Myprotein Creamy Chicken Alfredo 550g","price":4.75,"dealStr":"5 for \u00a320.00","size":"550g","kcal":628,"protein":57.9,"slug":"myprotein-creamy-chicken-alfredo-550g"},
-  {"id":"26780","name":"Slimming World Minced Beef Hotpot 550g","price":4.5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":440,"protein":37.4,"slug":"slimming-world-minced-beef-hotpot-550g"},
-  {"id":"58002","name":"Slimming World Meatballs & Pasta with Spicy Tomato Sauce 550g","price":4.5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":539,"protein":41.8,"slug":"slimming-world-meatballs-and-pasta-with-spicy-tomato-sauce-550g"},
-  {"id":"87459","name":"Iceland Takeaway Chicken Balti 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":420,"protein":34.6,"slug":"iceland-takeaway-chicken-balti-375g"},
-  {"id":"87087","name":"Iceland Chicken Fried Rice 350g","price":2.5,"dealStr":"3 for \u00a36.00","size":"350g","kcal":515,"protein":24.9,"slug":"iceland-chicken-fried-rice-350g"},
-  {"id":"51490","name":"Myprotein Chinese BBQ Chicken Noodles 500g","price":4.75,"dealStr":"5 for \u00a320.00","size":"500g","kcal":602,"protein":55.5,"slug":"myprotein-chinese-bbq-chicken-noodles-500g"},
-  {"id":"49347","name":"Myprotein Chicken Shawarma with Rice 500g","price":4.75,"dealStr":"5 for \u00a320.00","size":"500g","kcal":480,"protein":53.2,"slug":"myprotein-chicken-shawarma-with-rice-500g"},
-  {"id":"83851","name":"Iceland Vegetable Lasagne 400g","price":1.15,"dealStr":"5 for \u00a35.00","size":"400g","kcal":493,"protein":15.1,"slug":"iceland-vegetable-lasagne-400g"},
-  {"id":"87441","name":"Iceland Takeaway Chicken Madras 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":382,"protein":30.4,"slug":"iceland-takeaway-chicken-madras-375g"},
-  {"id":"91285","name":"Cathedral City Our Cheesy Potato and Bacon Bake 500g","price":4.5,"dealStr":"4 for \u00a315.00","size":"500g","kcal":775,"protein":37,"slug":"cathedral-city-our-cheesy-potato-and-bacon-bake-500g"},
-  {"id":"40998","name":"Myprotein Bang Bang Thai Chicken with Rice 350g","price":4.25,"dealStr":"5 for \u00a317.00","size":"350g","kcal":329,"protein":42.7,"slug":"myprotein-bang-bang-thai-chicken-with-rice-350g"},
-  {"id":"48957","name":"Iceland 8 (Approx.) Minced Beef Crispy Pancakes 500g","price":2.5,"dealStr":null,"size":"500g","kcal":1265,"protein":28.5,"slug":"iceland-8-%28approx.%29-minced-beef-crispy-pancakes-500g"},
-  {"id":"23239","name":"Cathedral City Our Cheesy Bolognese Pasta Bake 400g","price":4.25,"dealStr":"4 for \u00a315.00","size":"400g","kcal":730,"protein":38.6,"slug":"cathedral-city-our-cheesy-bolognese-pasta-bake-400g"},
-  {"id":"39194","name":"Iceland Luxury Slow Cooked Sticky Beef Rib Lasagne 400g","price":3.75,"dealStr":null,"size":"400g","kcal":696,"protein":43.8,"slug":"iceland-luxury-slow-cooked-sticky-beef-rib-lasagne-400g"},
-  {"id":"59832","name":"Iceland Luxury King Prawn Alfredo 450g","price":3.75,"dealStr":"3 for \u00a310.00","size":"450g","kcal":460,"protein":26.3,"slug":"iceland-luxury-king-prawn-alfredo-450g"},
-  {"id":"14821","name":"Slimming World Cauliflower Mac ’n’ Cheese 550g","price":4.25,"dealStr":"5 for \u00a320.00","size":"550g","kcal":435,"protein":22,"slug":"slimming-world-cauliflower-mac-n-cheese-550g"},
-  {"id":"41453","name":"Slimming World Chicken Tikka Balti 500g","price":4.5,"dealStr":"5 for \u00a320.00","size":"500g","kcal":405,"protein":58,"slug":"slimming-world-chicken-tikka-balti-500g"},
-  {"id":"37470","name":"Myprotein Chicken & Chorizo Lasagne 500g","price":4.75,"dealStr":"5 for \u00a320.00","size":"500g","kcal":566,"protein":45.9,"slug":"myprotein-chicken-and-chorizo-lasagne-500g"},
-  {"id":"92823","name":"TGI Fridays Cajun Chicken Pasta with Chorizo 400g","price":4.25,"dealStr":"4 for \u00a315.00","size":"400g","kcal":623,"protein":35,"slug":"tgi-fridays-cajun-chicken-pasta-with-chorizo-400g"},
-  {"id":"49419","name":"Myprotein Buffalo Chicken Pasta 350g","price":4.25,"dealStr":"5 for \u00a317.00","size":"350g","kcal":362,"protein":38.5,"slug":"myprotein-buffalo-chicken-pasta-350g"},
-  {"id":"2046","name":"Grill House Authentic Chicken Shawarma Kebab Meat 350g","price":4,"dealStr":"4 for \u00a315.00","size":"350g","kcal":658,"protein":61.6,"slug":"grill-house-authentic-chicken-shawarma-kebab-meat-350g"},
-  {"id":"49372","name":"Myprotein Tandoori Chicken Biryani 500g","price":4.75,"dealStr":"5 for \u00a320.00","size":"500g","kcal":510,"protein":50.6,"slug":"myprotein-tandoori-chicken-biryani-500g"},
-  {"id":"48271","name":"Slimming World Bang Bang Chicken & Rice 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":324,"protein":25.6,"slug":"slimming-world-bang-bang-chicken-and-rice-400g"},
-  {"id":"87449","name":"Iceland Extra Hot Chicken Tikka Masala 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":325,"protein":20.8,"slug":"iceland-extra-hot-chicken-tikka-masala-375g"},
-  {"id":"95076","name":"Iceland Take Away Crispy Shredded Duck & 6 Pancakes 230g","price":4,"dealStr":null,"size":"230g","kcal":683,"protein":18.4,"slug":"iceland-take-away-crispy-shredded-duck-and-6-pancakes-230g"},
-  {"id":"94862","name":"Iceland Spaghetti Carbonara 400g","price":2.5,"dealStr":"3 for \u00a36.00","size":"400g","kcal":524,"protein":24.3,"slug":"iceland-spaghetti-carbonara-400g"},
-  {"id":"59835","name":"Iceland Luxury Salmon, King Prawn & Smoked Haddock Fish Pie 460g","price":3.75,"dealStr":"3 for \u00a310.00","size":"460g","kcal":546,"protein":30.7,"slug":"iceland-luxury-salmon-king-prawn-and-smoked-haddock-fish-pie-460g"},
-  {"id":"95066","name":"Iceland Luxury Slow Cooked Beef Rib Cheesy Bake 400g","price":3.75,"dealStr":null,"size":"400g","kcal":519,"protein":33.4,"slug":"iceland-luxury-slow-cooked-beef-rib-cheesy-bake-400g"},
-  {"id":"90982","name":"Iceland Luxury Chicken, Mushroom & Bacon Pasta 400g","price":3.75,"dealStr":"3 for \u00a310.00","size":"400g","kcal":576,"protein":33.3,"slug":"iceland-luxury-chicken-mushroom-and-bacon-pasta-400g"},
-  {"id":"79235","name":"Slimming World King Prawn Linguine 550g","price":4.75,"dealStr":"5 for \u00a320.00","size":"550g","kcal":468,"protein":27,"slug":"slimming-world-king-prawn-linguine-550g"},
-  {"id":"78627","name":"Slimming World Free Food Lunch Bowls Pasta Bolognese 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":320,"protein":24,"slug":"slimming-world-free-food-lunch-bowls-pasta-bolognese-400g"},
-  {"id":"93491","name":"Iceland Luxury Slow Cooked Cottage Pie 400g","price":3.75,"dealStr":"3 for \u00a310.00","size":"400g","kcal":471,"protein":27,"slug":"iceland-luxury-slow-cooked-cottage-pie-400g"},
-  {"id":"40323","name":"Slimming World Chilli Con Carne & Rice 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":332,"protein":23.6,"slug":"slimming-world-chilli-con-carne-and-rice-400g"},
-  {"id":"27874","name":"Myprotein Korean BBQ Chicken with Rice 350g","price":4.25,"dealStr":"5 for \u00a317.00","size":"350g","kcal":386,"protein":35.3,"slug":"myprotein-korean-bbq-chicken-with-rice-350g"},
-  {"id":"48218","name":"Myprotein Chicken & Chorizo Paella 500g","price":4.75,"dealStr":"5 for \u00a320.00","size":"500g","kcal":472,"protein":47.5,"slug":"myprotein-chicken-and-chorizo-paella-500g"},
-  {"id":"33821","name":"Blue Dragon Sweet Chilli Noodles with Crispy Chicken 400g","price":3.5,"dealStr":"Was \u00a33.75, Now \u00a32.25","size":"400g","kcal":639,"protein":22.9,"slug":"blue-dragon-sweet-chilli-noodles-with-crispy-chicken-400g"},
-  {"id":"59641","name":"Iceland Luxury Steak Chianti Ragu 450g","price":3.75,"dealStr":"3 for \u00a310.00","size":"450g","kcal":538,"protein":36.9,"slug":"iceland-luxury-steak-chianti-ragu-450g"},
-  {"id":"45832","name":"Iceland Slow Cooked BBQ Rack of Ribs with BBQ Sauce 500g","price":4.25,"dealStr":null,"size":"500g","kcal":1205,"protein":84,"slug":"iceland-slow-cooked-bbq-rack-of-ribs-with-bbq-sauce-500g"},
-  {"id":"87080","name":"Iceland Takeaway Chicken Jalfrezi 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":293,"protein":28.3,"slug":"iceland-takeaway-chicken-jalfrezi-375g"},
-  {"id":"24021","name":"Slimming World Aromatic Duck Noodles 550g","price":5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":446,"protein":38,"slug":"slimming-world-aromatic-duck-noodles-550g"},
-  {"id":"83727","name":"Iceland Luxury Chicken Korma 400g","price":3.75,"dealStr":"3 for \u00a310.00","size":"400g","kcal":544,"protein":40.7,"slug":"iceland-luxury-chicken-korma-400g"},
-  {"id":"36848","name":"Slimming World Chinese Chicken Fried Rice 575g","price":4.25,"dealStr":"5 for \u00a320.00","size":"575g","kcal":604,"protein":45.4,"slug":"slimming-world-chinese-chicken-fried-rice-575g"},
-  {"id":"48219","name":"Myprotein Mexican Chilli Beef with Rice 350g","price":4.25,"dealStr":"5 for \u00a317.00","size":"350g","kcal":407,"protein":37,"slug":"myprotein-mexican-chilli-beef-with-rice-350g"},
-  {"id":"90984","name":"Iceland Luxury Butter Chicken Curry 400g","price":3.75,"dealStr":"3 for \u00a310.00","size":"400g","kcal":556,"protein":38.3,"slug":"iceland-luxury-butter-chicken-curry-400g"},
-  {"id":"40319","name":"Myprotein Peanut Free Satay Chicken with Noodles 350g","price":4.25,"dealStr":"5 for \u00a317.00","size":"350g","kcal":413,"protein":43.1,"slug":"myprotein-peanut-free-satay-chicken-with-noodles-350g"},
-  {"id":"40052","name":"Slimming World Cottage Pie 500g","price":4.5,"dealStr":"5 for \u00a320.00","size":"500g","kcal":360,"protein":32.5,"slug":"slimming-world-cottage-pie-500g"},
-  {"id":"40358","name":"Las Iguanas Cheesy Garlic Chicken Enchilada 480g","price":4.5,"dealStr":"4 for \u00a315.00","size":"480g","kcal":883,"protein":35,"slug":"las-iguanas-cheesy-garlic-chicken-enchilada-480g"},
-  {"id":"41014","name":"Myprotein Salt & Pepper Chicken with Rice 550g","price":4.75,"dealStr":"5 for \u00a320.00","size":"550g","kcal":603,"protein":66.3,"slug":"myprotein-salt-and-pepper-chicken-with-rice-550g"},
-  {"id":"78449","name":"Iceland Luxury Beef & Pancetta Spaghetti Bolognese 450g","price":3.75,"dealStr":"3 for \u00a310.00","size":"450g","kcal":494,"protein":28.9,"slug":"iceland-luxury-beef-and-pancetta-spaghetti-bolognese-450g"},
-  {"id":"40405","name":"Las Iguanas Classic Chilli Beef Burrito Bowl 450g","price":4.25,"dealStr":"4 for \u00a315.00","size":"450g","kcal":605,"protein":36.8,"slug":"las-iguanas-classic-chilli-beef-burrito-bowl-450g"},
-  {"id":"33829","name":"Slimming World Hunter's Chicken Risotto 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":384,"protein":31.6,"slug":"slimming-world-hunters-chicken-risotto-400g"},
-  {"id":"60905","name":"Slimming World Paella 550g","price":4.5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":479,"protein":33.6,"slug":"slimming-world-paella-550g"},
-  {"id":"47365","name":"Myprotein Cheese & Ham 2 Omelettes 240g","price":3,"dealStr":null,"size":"240g","kcal":370,"protein":38.2,"slug":"myprotein-cheese-and-ham-2-omelettes-240g"},
-  {"id":"41013","name":"Myprotein Chilli Chicken & Rice 550g","price":4.75,"dealStr":"5 for \u00a320.00","size":"550g","kcal":582,"protein":47.2,"slug":"myprotein-chilli-chicken-and-rice-550g"},
-  {"id":"41048","name":"Iceland Luxury Creamy Beef Curry & Sticky Rice 400g","price":3.75,"dealStr":"3 for \u00a310.00","size":"400g","kcal":604,"protein":20.6,"slug":"iceland-luxury-creamy-beef-curry-and-sticky-rice-400g"},
-  {"id":"87453","name":"Iceland Chicken Rogan Josh 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":362,"protein":34.3,"slug":"iceland-chicken-rogan-josh-375g"},
-  {"id":"41447","name":"Slimming World Roasted Mushroom Stroganoff & Rice 550g","price":4.25,"dealStr":"5 for \u00a320.00","size":"550g","kcal":369,"protein":14.9,"slug":"slimming-world-roasted-mushroom-stroganoff-and-rice-550g"},
-  {"id":"87455","name":"Iceland Takeaway Chicken Curry Noodles 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":398,"protein":22.4,"slug":"iceland-takeaway-chicken-curry-noodles-375g"},
-  {"id":"39819","name":"Mr Brain's 2 Pork Faggots 222g","price":0.75,"dealStr":null,"size":"222g","kcal":192,"protein":13,"slug":"mr-brains-2-pork-faggots-222g"},
-  {"id":"40406","name":"Las Iguanas Smokey BBQ Chicken Burrito Bowl 450g","price":4.25,"dealStr":"4 for \u00a315.00","size":"450g","kcal":589,"protein":41.7,"slug":"las-iguanas-smokey-bbq-chicken-burrito-bowl-450g"},
-  {"id":"48241","name":"Slimming World Cauliflower Cheese 300g","price":2.75,"dealStr":null,"size":"300g","kcal":243,"protein":14.4,"slug":"slimming-world-cauliflower-cheese-300g"},
-  {"id":"49436","name":"Myprotein Chicken Tikka Balti Bowl 450g","price":4.75,"dealStr":"5 for \u00a320.00","size":"450g","kcal":606,"protein":53,"slug":"myprotein-chicken-tikka-balti-bowl-450g"},
-  {"id":"17333","name":"Iceland Takeaway Shanghai Beef Noodles 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":378,"protein":17.2,"slug":"iceland-takeaway-shanghai-beef-noodles-375g"},
-  {"id":"87462","name":"Iceland Sweet & Sour Battered Chicken 229g","price":2.5,"dealStr":"3 for \u00a36.00","size":"229g","kcal":373,"protein":23.5,"slug":"iceland-sweet-and-sour-battered-chicken-229g"},
-  {"id":"47441","name":"Myprotein Four Cheese 2 Omelettes 240g","price":3,"dealStr":null,"size":"240g","kcal":398,"protein":42.2,"slug":"myprotein-four-cheese-2-omelettes-240g"},
-  {"id":"51055","name":"Young's Admiral's Pie 300g","price":2.5,"dealStr":"8 for \u00a310.00","size":"300g","kcal":327,"protein":13.2,"slug":"youngs-admirals-pie-300g"},
-  {"id":"28926","name":"Myprotein Chicken & Beef Naked Burrito 350g","price":4.25,"dealStr":"5 for \u00a317.00","size":"350g","kcal":340,"protein":38.5,"slug":"myprotein-chicken-and-beef-naked-burrito-350g"},
-  {"id":"83387","name":"Slimming World Sweet and Sour Chicken Noodles 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":304,"protein":25.6,"slug":"slimming-world-sweet-and-sour-chicken-noodles-400g"},
-  {"id":"26054","name":"Myprotein Piri Piri Chicken With Rice 350g","price":4.25,"dealStr":"5 for \u00a317.00","size":"350g","kcal":354,"protein":47.3,"slug":"myprotein-piri-piri-chicken-with-rice-350g"},
-  {"id":"41015","name":"Iceland Swedish Meatballs & Mash with Garden Peas & Creamy Gravy 400g","price":2.65,"dealStr":"3 for \u00a36.00","size":"400g","kcal":431,"protein":18.1,"slug":"iceland-swedish-meatballs-and-mash-with-garden-peas-and-creamy-gravy-400g"},
-  {"id":"40393","name":"Las Iguanas Chipotle Chicken Burrito 320g","price":4.25,"dealStr":"4 for \u00a315.00","size":"320g","kcal":598,"protein":22.4,"slug":"las-iguanas-chipotle-chicken-burrito-320g"},
-  {"id":"46971","name":"Slimming World Tomato & Mozzarella Ravioli 200g","price":3,"dealStr":"\u00a34.50 Meal Deal","size":"200g","kcal":342,"protein":16.2,"slug":"slimming-world-tomato-and-mozzarella-ravioli-200g"},
-  {"id":"75196","name":"Iceland Double Pepperoni Pasta Melt 400g","price":2.5,"dealStr":"3 for \u00a36.00","size":"400g","kcal":519,"protein":19.3,"slug":"iceland-double-pepperoni-pasta-melt-400g"},
-  {"id":"87457","name":"Iceland Takeaway Chicken Vindaloo 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":392,"protein":34.7,"slug":"iceland-takeaway-chicken-vindaloo-375g"},
-  {"id":"87452","name":"Iceland Takeaway Chicken Bhuna 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":391,"protein":38.1,"slug":"iceland-takeaway-chicken-bhuna-375g"},
-  {"id":"48160","name":"Myprotein Singapore Noodles 350g","price":4.25,"dealStr":"5 for \u00a317.00","size":"350g","kcal":346,"protein":31.7,"slug":"myprotein-singapore-noodles-350g"},
-  {"id":"28684","name":"Iceland Takeaway Chicken & Mushroom 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":286,"protein":31.6,"slug":"iceland-takeaway-chicken-and-mushroom-375g"},
-  {"id":"91807","name":"Iceland Takeaway Chicken Dopiaza 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":352,"protein":31.4,"slug":"iceland-takeaway-chicken-dopiaza-375g"},
-  {"id":"36849","name":"Slimming World Chicken Tikka & Rice 575g","price":4.25,"dealStr":"5 for \u00a320.00","size":"575g","kcal":575,"protein":42.6,"slug":"slimming-world-chicken-tikka-and-rice-575g"},
-  {"id":"89234","name":"Slimming World Free Food Teriyaki Noodles 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":284,"protein":12,"slug":"slimming-world-free-food-teriyaki-noodles-400g"},
-  {"id":"105068","name":"Chopstix Caramel Drizzle Chicken with Noodles 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":698,"protein":27.9,"slug":"chopstix-caramel-drizzle-chicken-with-noodles-400g"},
-  {"id":"91141","name":"Iceland Takeaway Sweet Chilli Chicken Noodles 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":457,"protein":22.4,"slug":"iceland-takeaway-sweet-chilli-chicken-noodles-375g"},
-  {"id":"50404","name":"Myprotein 6 Firecracker Chicken Koftas 480g","price":6,"dealStr":"2 for \u00a310.00","size":"480g","kcal":850,"protein":74.9,"slug":"myprotein-6-firecracker-chicken-koftas-480g"},
-  {"id":"18508","name":"Iceland 4 Crispy Pancakes Minced Beef & Onion 250g","price":1.15,"dealStr":"5 for \u00a35.00","size":"250g","kcal":433,"protein":13,"slug":"iceland-4-crispy-pancakes-minced-beef-and-onion-250g"},
-  {"id":"75670","name":"Young's Fisherman's Pie 300g","price":2.5,"dealStr":"8 for \u00a310.00","size":"300g","kcal":345,"protein":18.9,"slug":"youngs-fishermans-pie-300g"},
-  {"id":"40344","name":"Las Iguanas Mexican Chorizo & Bacon Mac & Cheese 400g","price":4.25,"dealStr":"4 for \u00a315.00","size":"400g","kcal":813,"protein":44.6,"slug":"las-iguanas-mexican-chorizo-and-bacon-mac-and-cheese-400g"},
-  {"id":"50703","name":"Iceland All Day Breakfast 400g","price":2.65,"dealStr":null,"size":"400g","kcal":556,"protein":23.2,"slug":"iceland-all-day-breakfast-400g"},
-  {"id":"105062","name":"Chopstix Noodle Bar Chinese Style Chicken Curry with Egg Fried Rice 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":444,"protein":52,"slug":"chopstix-noodle-bar-chinese-style-chicken-curry-with-egg-fried-rice-400g"},
-  {"id":"18546","name":"Iceland 4 Crispy Pancakes Cheese & Ham 250g","price":1.15,"dealStr":"5 for \u00a35.00","size":"250g","kcal":615,"protein":18.3,"slug":"iceland-4-crispy-pancakes-cheese-and-ham-250g"},
-  {"id":"101720","name":"Birds Eye Steamfresh Mushroom Tagliatelle with a Creamy Sauce Meal for 1 400g","price":3.5,"dealStr":"Now \u00a32","size":"400g","kcal":508,"protein":17.6,"slug":"birds-eye-steamfresh-mushroom-tagliatelle-with-a-creamy-sauce-meal-for-1-400g"},
-  {"id":"40615","name":"Iceland Luxury Red Thai Chicken Curry & Sticky Rice 400g","price":3.75,"dealStr":"3 for \u00a310.00","size":"400g","kcal":577,"protein":21.6,"slug":"iceland-luxury-red-thai-chicken-curry-and-sticky-rice-400g"},
-  {"id":"105063","name":"Chopstix Noodle Bar Salt & Pepper Chicken with Noodles 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":645,"protein":34.7,"slug":"chopstix-noodle-bar-salt-and-pepper-chicken-with-noodles-400g"},
-  {"id":"41016","name":"Iceland Grillsteak & Mash with Garden Peas & Peppercorn Sauce 400g","price":2.65,"dealStr":"3 for \u00a36.00","size":"400g","kcal":435,"protein":19.3,"slug":"iceland-grillsteak-and-mash-with-garden-peas-and-peppercorn-sauce-400g"},
-  {"id":"40392","name":"Las Iguanas Classic Chilli Beef Burrito 320g","price":4.25,"dealStr":"4 for \u00a315.00","size":"320g","kcal":653,"protein":23,"slug":"las-iguanas-classic-chilli-beef-burrito-320g"},
-  {"id":"105067","name":"Chopstix K-Pop BBQ Chicken with Egg Fried Rice 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":594,"protein":28.5,"slug":"chopstix-k-pop-bbq-chicken-with-egg-fried-rice-400g"},
-  {"id":"37360","name":"Myprotein Chicken Tikka Loaded Wrap","price":2.5,"dealStr":null,"size":"None","kcal":346,"protein":15.4,"slug":"myprotein-chicken-tikka-loaded-wrap"},
-  {"id":"93526","name":"Iceland Luxury Beef Stroganoff 400g","price":3.75,"dealStr":"3 for \u00a310.00","size":"400g","kcal":456,"protein":19.1,"slug":"iceland-luxury-beef-stroganoff-400g"},
-  {"id":"45924","name":"Iceland Cordon Bleu 300g","price":4,"dealStr":"4 for \u00a315.00","size":"300g","kcal":624,"protein":53.1,"slug":"iceland-cordon-bleu-300g"},
-  {"id":"37959","name":"Slimming World Chicken Casserole 500g","price":4.5,"dealStr":"5 for \u00a320.00","size":"500g","kcal":310,"protein":46.5,"slug":"slimming-world-chicken-casserole-500g"},
-  {"id":"32800","name":"Slimming World Chinese-Style Chicken Curry 500g","price":4.5,"dealStr":"5 for \u00a320.00","size":"500g","kcal":270,"protein":44,"slug":"slimming-world-chinese-style-chicken-curry-500g"},
-  {"id":"59834","name":"Iceland Luxury Beef Bourguignon & Mash 450g","price":3.75,"dealStr":"3 for \u00a310.00","size":"450g","kcal":407,"protein":24.5,"slug":"iceland-luxury-beef-bourguignon-and-mash-450g"},
-  {"id":"40235","name":"Slimming World Pea & Asparagus Risotto 575g","price":4.25,"dealStr":null,"size":"575g","kcal":512,"protein":17.3,"slug":"slimming-world-pea-and-asparagus-risotto-575g"},
-  {"id":"40394","name":"Las Iguanas BBQ Pork Enchilada 480g","price":4.5,"dealStr":"4 for \u00a315.00","size":"480g","kcal":902,"protein":40.3,"slug":"las-iguanas-bbq-pork-enchilada-480g"},
-  {"id":"12545","name":"Slimming World Burger pasta 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":352,"protein":26.8,"slug":"slimming-world-burger-pasta-400g"},
-  {"id":"37417","name":"Myprotein Salt & Pepper Meat Feast Noodles 500g","price":4.75,"dealStr":"5 for \u00a320.00","size":"500g","kcal":508,"protein":54.8,"slug":"myprotein-salt-and-pepper-meat-feast-noodles-500g"},
-  {"id":"27797","name":"Patak's Chicken Tikka Masala with Rice 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":463,"protein":30.1,"slug":"pataks-chicken-tikka-masala-with-rice-400g"},
-  {"id":"95032","name":"Slimming World Naked Chicken Katsu & Rice 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":340,"protein":27.6,"slug":"slimming-world-naked-chicken-katsu-and-rice-400g"},
-  {"id":"40176","name":"Slimming World Korean-Style Chicken & Rice 550g","price":4.5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":490,"protein":41.3,"slug":"slimming-world-korean-style-chicken-and-rice-550g"},
-  {"id":"87421","name":"Slimming World Chicken Tikka Rogan Josh 500g","price":4.25,"dealStr":"5 for \u00a320.00","size":"500g","kcal":375,"protein":52.5,"slug":"slimming-world-chicken-tikka-rogan-josh-500g"},
-  {"id":"41050","name":"Iceland Luxury Chicken Vindaloo & Fragrant Rice 400g","price":3.75,"dealStr":"3 for \u00a310.00","size":"400g","kcal":532,"protein":23.1,"slug":"iceland-luxury-chicken-vindaloo-and-fragrant-rice-400g"},
-  {"id":"36852","name":"Slimming World Chicken Pesto Pasta 550g","price":4.5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":528,"protein":48.4,"slug":"slimming-world-chicken-pesto-pasta-550g"},
-  {"id":"39224","name":"Slimming World King Prawn Alfredo 550g","price":4.75,"dealStr":"5 for \u00a320.00","size":"550g","kcal":462,"protein":32.5,"slug":"slimming-world-king-prawn-alfredo-550g"},
-  {"id":"94496","name":"Iceland Luxury Garlic King Prawn Balti 400g","price":3.75,"dealStr":"3 for \u00a310.00","size":"400g","kcal":396,"protein":14.8,"slug":"iceland-luxury-garlic-king-prawn-balti-400g"},
-  {"id":"48268","name":"Slimming World Moroccan-Spiced Vegetable Tagine 550g","price":4.25,"dealStr":"5 for \u00a320.00","size":"550g","kcal":523,"protein":26.4,"slug":"slimming-world-moroccan-spiced-vegetable-tagine-550g"},
-  {"id":"40236","name":"Slimming World Thai Green Chicken Curry 500g","price":4.5,"dealStr":"5 for \u00a320.00","size":"500g","kcal":345,"protein":47.5,"slug":"slimming-world-thai-green-chicken-curry-500g"},
-  {"id":"93842","name":"Slimming World Jerk Chicken & Rice 550g","price":4.75,"dealStr":"5 for \u00a320.00","size":"550g","kcal":473,"protein":36.9,"slug":"slimming-world-jerk-chicken-and-rice-550g"},
-  {"id":"27793","name":"Patak's Lamb Rogan Josh with Rice 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":381,"protein":20.5,"slug":"pataks-lamb-rogan-josh-with-rice-400g"},
-  {"id":"27832","name":"Patak's Beef Madras with Rice 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":495,"protein":25.2,"slug":"pataks-beef-madras-with-rice-400g"},
-  {"id":"83390","name":"Slimming World Chicken in Black Bean Sauce 500g","price":4.5,"dealStr":"5 for \u00a320.00","size":"500g","kcal":355,"protein":50.5,"slug":"slimming-world-chicken-in-black-bean-sauce-500g"},
-  {"id":"49337","name":"Myprotein Chicken & Peppercorn Sauce 350g","price":4.25,"dealStr":"5 for \u00a317.00","size":"350g","kcal":277,"protein":37.1,"slug":"myprotein-chicken-and-peppercorn-sauce-350g"},
-  {"id":"26283","name":"Iceland Takeaway Chicken Pasanda 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":496,"protein":38.5,"slug":"iceland-takeaway-chicken-pasanda-375g"},
-  {"id":"83389","name":"Slimming World Singapore-Style Noodles 550g","price":4.5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":407,"protein":42.9,"slug":"slimming-world-singapore-style-noodles-550g"},
-  {"id":"105912","name":"Kitchen Joy Spicy Sesame Chicken Aromatic Chilli with Noodles 320g","price":2.75,"dealStr":null,"size":"320g","kcal":404,"protein":21,"slug":"kitchen-joy-spicy-sesame-chicken-aromatic-chilli-with-noodles-320g"},
-  {"id":"90986","name":"Iceland Luxury Beef in Blackbean 400g","price":3.75,"dealStr":"3 for \u00a310.00","size":"400g","kcal":303,"protein":25.6,"slug":"iceland-luxury-beef-in-blackbean-400g"},
-  {"id":"105058","name":"Chopstix Noodl Bar Sweet & Sour Chicken with Noodles 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":706,"protein":28.8,"slug":"chopstix-noodl-bar-sweet-and-sour-chicken-with-noodles-400g"},
-  {"id":"39196","name":"Iceland Luxury Chinese Banquet for One 500g","price":3.75,"dealStr":"3 for \u00a310.00","size":"500g","kcal":620,"protein":33.3,"slug":"iceland-luxury-chinese-banquet-for-one-500g"},
-  {"id":"105909","name":"Kitchen Joy Chicken Panang Rich Coconut & Lime Curry with Jasmine Rice 350g","price":2.75,"dealStr":null,"size":"350g","kcal":512,"protein":21,"slug":"kitchen-joy-chicken-panang-rich-coconut-and-lime-curry-with-jasmine-rice-350g"},
-  {"id":"91464","name":"Iceland Crispy Sweet and Sour Chicken 400g","price":3.75,"dealStr":"3 for \u00a310.00","size":"400g","kcal":532,"protein":20.6,"slug":"iceland-crispy-sweet-and-sour-chicken-400g"},
-  {"id":"105065","name":"Chopstix Noodle Bar Teriyaki Beef with Noodles 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":504,"protein":31.6,"slug":"chopstix-noodle-bar-teriyaki-beef-with-noodles-400g"},
-  {"id":"41454","name":"Slimming World Roasted Vegetable Tikka Masala 500g","price":4.25,"dealStr":"5 for \u00a320.00","size":"500g","kcal":230,"protein":8.5,"slug":"slimming-world-roasted-vegetable-tikka-masala-500g"},
-  {"id":"26053","name":"Slimming World Carrot & Coriander Soup 500g","price":2.5,"dealStr":null,"size":"500g","kcal":205,"protein":9,"slug":"slimming-world-carrot-and-coriander-soup-500g"},
-  {"id":"40330","name":"Iceland Luxury Sticky Korean BBQ Pork 400g","price":3.75,"dealStr":"3 for \u00a310.00","size":"400g","kcal":504,"protein":28.7,"slug":"iceland-luxury-sticky-korean-bbq-pork-400g"},
-  {"id":"27791","name":"Slimming World Peri-Peri Chicken & Rice 400g","price":3.75,"dealStr":"4 for \u00a315.00","size":"400g","kcal":284,"protein":22.4,"slug":"slimming-world-peri-peri-chicken-and-rice-400g"},
-  {"id":"105911","name":"Kitchen Joy Thai Red Chicken Aromatic Coconut Curry with Jasmine Rice 350g","price":2.75,"dealStr":null,"size":"350g","kcal":474,"protein":20,"slug":"kitchen-joy-thai-red-chicken-aromatic-coconut-curry-with-jasmine-rice-350g"},
-  {"id":"28835","name":"Iceland Fajita Chicken 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":264,"protein":28.3,"slug":"iceland-fajita-chicken-375g"},
-  {"id":"105686","name":"Griddle Bakery 6 Original Waffles 200g","price":2.75,"dealStr":null,"size":"200g","kcal":568,"protein":14.6,"slug":"griddle-bakery-6-original-waffles-200g"},
-  {"id":"50933","name":"Slimming World Beef Lasagne 550g","price":4.5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":495,"protein":53.9,"slug":"slimming-world-beef-lasagne-550g"},
-  {"id":"105066","name":"Chopstix Noodle Bar Fire Cracker Chicken with Egg Fried Rice 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":616,"protein":40.2,"slug":"chopstix-noodle-bar-fire-cracker-chicken-with-egg-fried-rice-400g"},
-  {"id":"105910","name":"Kitchen Joy Sweet & Sour Chicken with Jasmine Rice 350g","price":2.75,"dealStr":null,"size":"350g","kcal":473,"protein":18,"slug":"kitchen-joy-sweet-and-sour-chicken-with-jasmine-rice-350g"},
-  {"id":"69223","name":"Hall's Haggis Neeps & Tatties 400g","price":1.75,"dealStr":null,"size":"400g","kcal":648,"protein":23.6,"slug":"halls-haggis-neeps-and-tatties-400g"},
-  {"id":"78865","name":"Iceland King Prawns in Tomato & Garlic Sauce 300g","price":4,"dealStr":null,"size":"300g","kcal":330,"protein":30.6,"slug":"iceland-sugo-alla-marinara-con-gamberi-king-prawns-in-tomato-and-garlic-sauce-300g"},
-  {"id":"40376","name":"Iceland Takeaway Tarka Dhal 350g","price":1.75,"dealStr":null,"size":"350g","kcal":433,"protein":16.2,"slug":"iceland-takeaway-tarka-dhal-350g"},
-  {"id":"50894","name":"Slimming World Cottage Pie 500g","price":4.5,"dealStr":"5 for \u00a320.00","size":"500g","kcal":360,"protein":32.5,"slug":"slimming-world-cottage-pie-500g"},
-  {"id":"50893","name":"Slimming World Meat Feast Pasta 550g","price":5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":495,"protein":47.8,"slug":"slimming-world-meat-feast-pasta-550g"},
-  {"id":"40370","name":"Iceland Takeaway Dahl Makhani 350g","price":1.75,"dealStr":null,"size":"350g","kcal":616,"protein":17.5,"slug":"iceland-takeaway-dahl-makhani-350g"},
-  {"id":"50876","name":"Slimming World Minced Beef Hotpot 550g","price":4.5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":440,"protein":37.4,"slug":"slimming-world-minced-beef-hotpot-550g"},
-  {"id":"64263","name":"Iceland Clams in a Mediterranean Style Tomato & Garlic Sauce 400g","price":4,"dealStr":null,"size":"400g","kcal":484,"protein":25.2,"slug":"iceland-sugo-alle-vongole-clams-400g"},
-  {"id":"50931","name":"Slimming World Pasta Bolognese 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":320,"protein":24,"slug":"slimming-world-pasta-bolognese-400g"},
-  {"id":"50840","name":"Slimming World Burger Pasta 400g","price":4.5,"dealStr":"4 for \u00a315.00","size":"400g","kcal":352,"protein":26.8,"slug":"slimming-world-burger-pasta-400g"},
-  {"id":"64265","name":"Iceland Fish & Seafood Casserole 450g","price":4,"dealStr":null,"size":"450g","kcal":504,"protein":47.3,"slug":"iceland-zuppa-di-pesce-fish-and-seafood-casserole-450g"},
-  {"id":"100730","name":"Authentic Curries & World Foods Faggots in Onion Gravy 400g","price":2.4,"dealStr":null,"size":"400g","kcal":504,"protein":16.4,"slug":"authentic-curries-and-world-foods-faggots-in-onion-gravy-400g"},
-  {"id":"50895","name":"Slimming World Chilli Con Carne & Rice 400g","price":4,"dealStr":"4 for \u00a315.00","size":"400g","kcal":332,"protein":23.6,"slug":"slimming-world-chilli-con-carne-and-rice-400g"},
-  {"id":"48221","name":"Myprotein Chip Shop Chicken Curry with Rice 550g","price":4.75,"dealStr":"5 for \u00a320.00","size":"550g","kcal":548,"protein":46.9,"slug":"myprotein-chip-shop-chicken-curry-with-rice-550g"},
-  {"id":"89177","name":"Slimming World Salt & Pepper Chicken Chow Mein 550g","price":4.5,"dealStr":"5 for \u00a320.00","size":"550g","kcal":429,"protein":42.4,"slug":"slimming-world-salt-and-pepper-chicken-chow-mein-550g"},
-  {"id":"41035","name":"Iceland Luxury Pulled Beef Madras & Basmati Rice 400g","price":3.75,"dealStr":"3 for \u00a310.00","size":"400g","kcal":568,"protein":21,"slug":"iceland-luxury-pulled-beef-madras-and-basmati-rice-400g"},
-  {"id":"17171","name":"Iceland Spicy Sweet & Sour Chicken 375g","price":2.5,"dealStr":"3 for \u00a36.00","size":"375g","kcal":528,"protein":31.4,"slug":"iceland-spicy-sweet-and-sour-chicken-375g"},
-  {"id":"90985","name":"Iceland Luxury Chicken Tikka Saag 400g","price":3.75,"dealStr":"3 for \u00a310.00","size":"400g","kcal":459,"protein":35.8,"slug":"iceland-luxury-chicken-tikka-saag-400g"},
-  {"id":"93256","name":"Iceland BBQ Pulled Pork with BBQ Sauce 425g","price":4,"dealStr":"4 for \u00a315.00","size":"425g","kcal":612,"protein":66.7,"slug":"iceland-bbq-pulled-pork-with-bbq-sauce-425g"},
-  {"id":"59646","name":"Iceland Luxury Chicken Makhani Masala 400g","price":3.75,"dealStr":"3 for \u00a310.00","size":"400g","kcal":599,"protein":43.1,"slug":"iceland-luxury-chicken-makhani-masala-400g"},
-  {"id":"77415","name":"Iceland Whole Chicken Breast Garlic & Herb Kievs 320g","price":5,"dealStr":"3 for \u00a310.00","size":"320g","kcal":749,"protein":51.2,"slug":"iceland-whole-chicken-breast-garlic-and-herb-kievs-320g"},
-  {"id":"68915","name":"Iceland Hunter's Chicken Breasts 430 g","price":4.5,"dealStr":"4 for \u00a315.00","size":"430g","kcal":611,"protein":74.8,"slug":"iceland-hunters-chicken-breasts-430-g"},
-  {"id":"48203","name":"Myprotein Sweet & Sour Chicken Noodles 500g","price":4.75,"dealStr":"5 for \u00a320.00","size":"500g","kcal":522,"protein":55.5,"slug":"myprotein-sweet-and-sour-chicken-noodles-500g"},
-  {"id":"39254","name":"Ninja Air Fry Crispy Chicken Chunks & Fries with Sweet & Sour Sauce 380g","price":2.5,"dealStr":null,"size":"380g","kcal":821,"protein":28.5,"slug":"ninja-air-fry-crispy-chicken-chunks-and-fries-with-sweet-and-sour-sauce-380g"},
-  {"id":"39229","name":"Ninja Air Fry Southern Fried Chicken Breast Strips & Waffle Fries with Southern Fried Gravy 400g","price":2.5,"dealStr":null,"size":"400g","kcal":824,"protein":30.8,"slug":"ninja-air-fry-southern-fried-chicken-breast-strips-and-waffle-fries-with-southern-fried-gravy-400g"},
-  {"id":"39228","name":"Ninja Air Fry Chicken Popsters & Waffle Fries with Cheesy Bacon Sauce 380g","price":2.5,"dealStr":null,"size":"380g","kcal":920,"protein":30.4,"slug":"ninja-air-fry-chicken-popsters-and-waffle-fries-with-cheesy-bacon-sauce-380g"},
-  {"id":"39195","name":"Iceland Luxury Indian Banquet For One 500g","price":3.75,"dealStr":"3 for \u00a310.00","size":"500g","kcal":649,"protein":37.8,"slug":"iceland-luxury-indian-banquet-for-one-500g"},
-  {"id":"19542","name":"Iceland Vegetable Tikka Masala 375g","price":2.15,"dealStr":"3 for \u00a36.00","size":"375g","kcal":284,"protein":6.5,"slug":"iceland-vegetable-tikka-masala-375g"}
-];
+    <nav class="site-nav">
+      <a class="site-nav-brand" href="index.html">Meal Optimiser</a>
+      <a href="meal-analysis.html">Dashboard</a>
+      <a href="tesco-filter.html">Tesco</a>
+      <a href="ms-filter.html">M&amp;S</a>
+      <a aria-current="page" href="iceland-filter.html">Iceland</a>
+      <a href="parsleybox-filter.html">Parsley Box</a>
+    </nav>
+    <h1>Iceland Frozen Ready Meals — Filter Tool</h1>
+    <p class="page-sub">
+      Data last refreshed:
+      <span class="ts last-refreshed">loading...</span>
+    </p>
+    <div id="stats">
+      <div class="stat">
+        <div class="val" id="s-count">—</div>
+        <div class="lbl">meals kept</div>
+      </div>
+      <div class="sep"></div>
+      <div class="stat">
+        <div class="val" id="s-price">—</div>
+        <div class="lbl">avg price (deal)</div>
+      </div>
+      <div class="sep"></div>
+      <div class="stat">
+        <div class="val" id="s-kcal">—</div>
+        <div class="lbl">avg kcal</div>
+      </div>
+      <div class="sep"></div>
+      <div class="stat">
+        <div class="val" id="s-protein">—</div>
+        <div class="lbl">avg protein</div>
+      </div>
+      <div class="sep"></div>
+      <div class="stat">
+        <div class="val" id="s-cpp">—</div>
+        <div class="lbl">£/g protein</div>
+      </div>
+    </div>
+    <div id="controls">
+      <input type="text" id="search" placeholder="Filter by name…" oninput="applyFilter()" />
+      <button onclick="selectAll(false)">Restore all</button>
+      <button class="danger" onclick="selectAll(true)">Exclude all visible</button>
+      <span id="excluded-count"></span>
+    </div>
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th class="excl">✕</th>
+          <th onclick="sortBy('name')">Name</th>
+          <th onclick="sortBy('size')">Size</th>
+          <th onclick="sortBy('price')">Price</th>
+          <th onclick="sortBy('effP')">Deal price</th>
+          <th onclick="sortBy('kcal')">Kcal</th>
+          <th onclick="sortBy('protein')">Protein</th>
+          <th onclick="sortBy('ppp')">£/protein g</th>
+          <th onclick="sortBy('pkc')">p/kcal</th>
+          <th onclick="sortBy('score')">Score</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <script>
+      const KEY = 'iceland';
+      let products = [];
+      async function loadProducts() {
+        const r = await fetch('data/iceland_all_products.json', { cache: 'no-store' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const raw = await r.json();
+        // Three observed JSON shapes across scraper outputs:
+        //   tesco       -> { "frozen":   [...] }
+        //   ms          -> [...]                     (bare list at root)
+        //   parsleybox  -> { "products": [...] }
+        //   iceland     -> { "products": [...] }
+        products = Array.isArray(raw) ? raw : raw.frozen || raw.products || [];
+      }
 
-function parseDealPrice(p) {
-  if (!p.dealStr) return p.price;
-  let m = p.dealStr.match(/(\d+)\s+for\s+£([\d.]+)/i);
-  if (m) return parseFloat(m[2]) / parseInt(m[1]);
-  m = p.dealStr.match(/Now\s+£([\d.]+)/i);
-  if (m) return parseFloat(m[1]);
-  m = p.dealStr.match(/Was.*Now\s+£([\d.]+)/i);
-  if (m) return parseFloat(m[1]);
-  m = p.dealStr.match(/^£([\d.]+)/);
-  if (m) return parseFloat(m[1]);
-  return p.price;
-}
+      function parseDealPrice(p) {
+        if (!p.dealStr) return p.price;
+        let m = p.dealStr.match(/(\d+)\s+for\s+£([\d.]+)/i);
+        if (m) return parseFloat(m[2]) / parseInt(m[1]);
+        m = p.dealStr.match(/Now\s+£([\d.]+)/i);
+        if (m) return parseFloat(m[1]);
+        m = p.dealStr.match(/Was.*Now\s+£([\d.]+)/i);
+        if (m) return parseFloat(m[1]);
+        m = p.dealStr.match(/^£([\d.]+)/);
+        if (m) return parseFloat(m[1]);
+        return p.price;
+      }
 
-let excluded = new Set();
-let currentSort = {key: 'score', dir: -1};
-let searchTerm = '';
+      let excluded = new Set();
+      let currentSort = { key: 'score', dir: -1 };
+      let searchTerm = '';
 
-function icelandUrl(p) {
-  if (!p.slug) return null;
-  return `https://www.iceland.co.uk/p/${p.slug}/${p.id}.html`;
-}
+      function icelandUrl(p) {
+        if (!p.slug) return null;
+        return `https://www.iceland.co.uk/p/${p.slug}/${p.id}.html`;
+      }
 
-function fmt(v, d=1) { return v==null ? '<span class="null">—</span>' : v.toFixed(d); }
+      function fmt(v, d = 1) {
+        return v == null ? '<span class="null">—</span>' : v.toFixed(d);
+      }
 
-function render() {
-  const term = searchTerm.toLowerCase();
-  const rows = products
-    .filter(p => !term || p.name.toLowerCase().includes(term))
-    .map(p => {
-      const effP = parseDealPrice(p);
-      const ppp = effP && p.protein ? effP/p.protein : null;
-      const pkc = effP && p.kcal ? effP*100/p.kcal : null;
-      const score = effP && p.kcal && p.protein ? (p.protein*p.protein*4)/(effP*p.kcal) : null;
-      return {...p, effP, ppp, pkc, score};
-    })
-    .sort((a,b) => {
-      let av=a[currentSort.key], bv=b[currentSort.key];
-      if(av==null&&bv==null) return 0; if(av==null) return 1; if(bv==null) return -1;
-      if(typeof av==='string') return av.localeCompare(bv)*currentSort.dir;
-      return (av-bv)*currentSort.dir;
-    });
+      function render() {
+        const term = searchTerm.toLowerCase();
+        const rows = products
+          .filter(p => !term || p.name.toLowerCase().includes(term))
+          .map(p => {
+            const effP = parseDealPrice(p);
+            const ppp = effP && p.protein ? effP / p.protein : null;
+            const pkc = effP && p.kcal ? (effP * 100) / p.kcal : null;
+            const score = effP && p.kcal && p.protein ? (p.protein * p.protein * 4) / (effP * p.kcal) : null;
+            return { ...p, effP, ppp, pkc, score };
+          })
+          .sort((a, b) => {
+            let av = a[currentSort.key],
+              bv = b[currentSort.key];
+            if (av == null && bv == null) return 0;
+            if (av == null) return 1;
+            if (bv == null) return -1;
+            if (typeof av === 'string') return av.localeCompare(bv) * currentSort.dir;
+            return (av - bv) * currentSort.dir;
+          });
 
-  document.getElementById('tbody').innerHTML = rows.map(p => {
-    const ex = excluded.has(p.id);
-    const url = icelandUrl(p);
-    const nameCell = url
-      ? `<a href="${url}" target="_blank" rel="noopener">${p.name}</a>`
-      : p.name;
-    const dealTag = p.dealStr ? `<br><span class="deal">${p.dealStr} → £${p.effP.toFixed(2)}</span>` : '';
-    return `<tr class="${ex?'excluded':''}" data-id="${p.id}">
-      <td class="excl"><input type="checkbox" ${ex?'checked':''} onchange="toggle('${p.id}')"></td>
+        document.getElementById('tbody').innerHTML = rows
+          .map(p => {
+            const ex = excluded.has(p.id);
+            const url = icelandUrl(p);
+            const nameCell = url ? `<a href="${url}" target="_blank" rel="noopener">${p.name}</a>` : p.name;
+            const dealTag = p.dealStr ? `<br><span class="deal">${p.dealStr} → £${p.effP.toFixed(2)}</span>` : '';
+            return `<tr class="${ex ? 'excluded' : ''}" data-id="${p.id}">
+      <td class="excl"><input type="checkbox" ${ex ? 'checked' : ''} onchange="toggle('${p.id}')"></td>
       <td class="name">${nameCell}</td>
-      <td>${p.size||'—'}</td>
+      <td>${p.size || '—'}</td>
       <td class="price">£${p.price.toFixed(2)}${dealTag}</td>
       <td class="price">£${p.effP.toFixed(2)}</td>
-      <td class="kcal">${fmt(p.kcal,0)}</td>
-      <td class="protein">${fmt(p.protein,1)}<small>g</small></td>
-      <td class="protein">${p.ppp!=null?'£'+fmt(p.ppp,3):'<span class="null">—</span>'}</td>
-      <td class="protein">${p.pkc!=null?fmt(p.pkc,2)+'p':'<span class="null">—</span>'}</td>
-      <td class="protein" style="font-weight:${p.score>3?'700':'400'};color:${p.score>3?'#2e7d32':p.score>1.5?'inherit':'#aaa'}">${p.score!=null?fmt(p.score,2):'<span class="null">—</span>'}</td>
+      <td class="kcal">${fmt(p.kcal, 0)}</td>
+      <td class="protein">${fmt(p.protein, 1)}<small>g</small></td>
+      <td class="protein">${p.ppp != null ? '£' + fmt(p.ppp, 3) : '<span class="null">—</span>'}</td>
+      <td class="protein">${p.pkc != null ? fmt(p.pkc, 2) + 'p' : '<span class="null">—</span>'}</td>
+      <td class="protein" style="font-weight:${p.score > 3 ? '700' : '400'};color:${p.score > 3 ? '#2e7d32' : p.score > 1.5 ? 'inherit' : '#aaa'}">${p.score != null ? fmt(p.score, 2) : '<span class="null">—</span>'}</td>
     </tr>`;
-  }).join('');
+          })
+          .join('');
 
-  updateStats();
-  document.getElementById('excluded-count').textContent = excluded.size ? `${excluded.size} excluded` : '';
-}
+        updateStats();
+        document.getElementById('excluded-count').textContent = excluded.size ? `${excluded.size} excluded` : '';
+      }
 
-function updateStats() {
-  const kept = products.filter(p => !excluded.has(p.id));
-  const prices   = kept.map(p => parseDealPrice(p)).filter(x=>x);
-  const kcals    = kept.map(p => p.kcal).filter(x=>x&&x>100);
-  const proteins = kept.map(p => p.protein).filter(x=>x&&x>1&&x<150);
-  const ppps     = kept.filter(p=>p.protein&&p.protein>1&&p.protein<150).map(p=>parseDealPrice(p)/p.protein);
-  const avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : null;
-  const ap=avg(prices), ak=avg(kcals), apr=avg(proteins), appp=avg(ppps);
-  document.getElementById('s-count').textContent = kept.length;
-  document.getElementById('s-price').textContent = ap ? '£'+ap.toFixed(2) : '—';
-  document.getElementById('s-kcal').textContent = ak ? Math.round(ak) : '—';
-  document.getElementById('s-protein').textContent = apr ? apr.toFixed(1)+'g' : '—';
-  document.getElementById('s-cpp').textContent = appp ? '£'+appp.toFixed(3) : '—';
-}
+      function updateStats() {
+        const kept = products.filter(p => !excluded.has(p.id));
+        const prices = kept.map(p => parseDealPrice(p)).filter(x => x);
+        const kcals = kept.map(p => p.kcal).filter(x => x && x > 100);
+        const proteins = kept.map(p => p.protein).filter(x => x && x > 1 && x < 150);
+        const ppps = kept
+          .filter(p => p.protein && p.protein > 1 && p.protein < 150)
+          .map(p => parseDealPrice(p) / p.protein);
+        const avg = a => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+        const ap = avg(prices),
+          ak = avg(kcals),
+          apr = avg(proteins),
+          appp = avg(ppps);
+        document.getElementById('s-count').textContent = kept.length;
+        document.getElementById('s-price').textContent = ap ? '£' + ap.toFixed(2) : '—';
+        document.getElementById('s-kcal').textContent = ak ? Math.round(ak) : '—';
+        document.getElementById('s-protein').textContent = apr ? apr.toFixed(1) + 'g' : '—';
+        document.getElementById('s-cpp').textContent = appp ? '£' + appp.toFixed(3) : '—';
+      }
 
-function toggle(id) { excluded.has(id)?excluded.delete(id):excluded.add(id); render(); scheduleSave(); }
-function selectAll(ex) {
-  const t=searchTerm.toLowerCase();
-  products.filter(p=>!t||p.name.toLowerCase().includes(t)).forEach(p=>ex?excluded.add(p.id):excluded.delete(p.id));
-  render(); scheduleSave();
-}
-function applyFilter() { searchTerm=document.getElementById('search').value; render(); }
-function sortBy(k) { currentSort.key===k?currentSort.dir*=-1:(currentSort={key:k,dir:1}); render(); }
+      function toggle(id) {
+        excluded.has(id) ? excluded.delete(id) : excluded.add(id);
+        render();
+        scheduleSave();
+      }
+      function selectAll(ex) {
+        const t = searchTerm.toLowerCase();
+        products
+          .filter(p => !t || p.name.toLowerCase().includes(t))
+          .forEach(p => (ex ? excluded.add(p.id) : excluded.delete(p.id)));
+        render();
+        scheduleSave();
+      }
+      function applyFilter() {
+        searchTerm = document.getElementById('search').value;
+        render();
+      }
+      function sortBy(k) {
+        currentSort.key === k ? (currentSort.dir *= -1) : (currentSort = { key: k, dir: 1 });
+        render();
+      }
 
-const LS_KEY = 'excl_' + KEY;
-let saveTimer = null;
-function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(saveExclusions, 400); }
-function saveExclusions() {
-  localStorage.setItem(LS_KEY, JSON.stringify([...excluded]));
-}
-function loadExclusions() {
-  try {
-    JSON.parse(localStorage.getItem(LS_KEY) || '[]').forEach(id=>excluded.add(id));
-  } catch(e) {}
-  render();
-}
-loadExclusions();
-</script>
-</body>
+      const LS_KEY = 'excl_' + KEY;
+      let saveTimer = null;
+      function scheduleSave() {
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(saveExclusions, 400);
+      }
+      function saveExclusions() {
+        localStorage.setItem(LS_KEY, JSON.stringify([...excluded]));
+      }
+      function loadExclusions() {
+        try {
+          JSON.parse(localStorage.getItem(LS_KEY) || '[]').forEach(id => excluded.add(id));
+        } catch (e) {}
+        render();
+      }
+      (async () => {
+        try {
+          await loadProducts();
+        } catch (e) {
+          document.getElementById('tbody').innerHTML =
+            '<tr><td colspan="99" style="padding:20px;text-align:center;color:#f85149">' +
+            'Failed to load Iceland frozen ready meals: ' +
+            e.message +
+            '</td></tr>';
+          return;
+        }
+        loadExclusions();
+      })();
+    </script>
+  </body>
 </html>

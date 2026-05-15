@@ -1,0 +1,7 @@
+node_modules/
+data/
+playwright-report/
+test-results/
+.playwright-mcp/
+package-lock.json
+.dev-tools/

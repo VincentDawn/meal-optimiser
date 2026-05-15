@@ -1,157 +1,219 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Parsley Box — Filter</title>
-<link rel="stylesheet" href="assets/filter.css">
-<script src="assets/freshness.js" defer></script>
-</head>
-<body>
-
-<!--
+  <head>
+    <meta charset="UTF-8" />
+    <title>Parsley Box — Filter</title>
+    <link rel="stylesheet" href="assets/filter.css" />
+    <script src="assets/freshness.js" defer></script>
+  </head>
+  <body>
+    <!--
   Shared site nav. Inlined into every page (no JS partials in a static site).
   Keep markup IDENTICAL across pages — only the `aria-current` attribute moves
   to mark the active page.
 -->
-<nav class="site-nav">
-  <a class="site-nav-brand" href="index.html">Meal Optimiser</a>
-  <a href="meal-analysis.html">Dashboard</a>
-  <a href="tesco-filter.html">Tesco</a>
-  <a href="ms-filter.html">M&amp;S</a>
-  <a href="iceland-filter.html">Iceland</a>
-  <a aria-current="page" href="parsleybox-filter.html">Parsley Box</a>
-</nav>
-<h1>Parsley Box — Filter Tool</h1>
-<p class="page-sub">Data last refreshed: <span class="ts last-refreshed">loading...</span></p>
-<div id="stats">
-  <div class="stat"><div class="val" id="s-count">—</div><div class="lbl">meals kept</div></div>
-  <div class="sep"></div>
-  <div class="stat"><div class="val" id="s-price">—</div><div class="lbl">avg price</div></div>
-  <div class="sep"></div>
-  <div class="stat"><div class="val" id="s-kcal">—</div><div class="lbl">avg kcal</div></div>
-  <div class="sep"></div>
-  <div class="stat"><div class="val" id="s-protein">—</div><div class="lbl">avg protein</div></div>
-  <div class="sep"></div>
-  <div class="stat"><div class="val" id="s-cpp">—</div><div class="lbl">£/g protein</div></div>
-</div>
+    <nav class="site-nav">
+      <a class="site-nav-brand" href="index.html">Meal Optimiser</a>
+      <a href="meal-analysis.html">Dashboard</a>
+      <a href="tesco-filter.html">Tesco</a>
+      <a href="ms-filter.html">M&amp;S</a>
+      <a href="iceland-filter.html">Iceland</a>
+      <a aria-current="page" href="parsleybox-filter.html">Parsley Box</a>
+    </nav>
+    <h1>Parsley Box — Filter Tool</h1>
+    <p class="page-sub">
+      Data last refreshed:
+      <span class="ts last-refreshed">loading...</span>
+    </p>
+    <div id="stats">
+      <div class="stat">
+        <div class="val" id="s-count">—</div>
+        <div class="lbl">meals kept</div>
+      </div>
+      <div class="sep"></div>
+      <div class="stat">
+        <div class="val" id="s-price">—</div>
+        <div class="lbl">avg price</div>
+      </div>
+      <div class="sep"></div>
+      <div class="stat">
+        <div class="val" id="s-kcal">—</div>
+        <div class="lbl">avg kcal</div>
+      </div>
+      <div class="sep"></div>
+      <div class="stat">
+        <div class="val" id="s-protein">—</div>
+        <div class="lbl">avg protein</div>
+      </div>
+      <div class="sep"></div>
+      <div class="stat">
+        <div class="val" id="s-cpp">—</div>
+        <div class="lbl">£/g protein</div>
+      </div>
+    </div>
 
-<div id="controls">
-  <input type="text" id="search" placeholder="Filter by name…" oninput="applyFilter()">
-  <button onclick="selectAll(false)">Restore all</button>
-  <button class="danger" onclick="selectAll(true)">Exclude all visible</button>
-  <span id="excluded-count"></span>
-</div>
+    <div id="controls">
+      <input type="text" id="search" placeholder="Filter by name…" oninput="applyFilter()" />
+      <button onclick="selectAll(false)">Restore all</button>
+      <button class="danger" onclick="selectAll(true)">Exclude all visible</button>
+      <span id="excluded-count"></span>
+    </div>
 
-<table id="tbl">
-  <thead>
-    <tr>
-      <th class="excl">✕</th>
-      <th onclick="sortBy('name')">Name</th>
-      <th onclick="sortBy('size')">Size</th>
-      <th onclick="sortBy('price')">Price</th>
-      <th onclick="sortBy('kcal')">Kcal</th>
-      <th onclick="sortBy('protein')">Protein</th>
-      <th onclick="sortBy('ppp')">£/protein g</th>
-      <th onclick="sortBy('pkc')">p/kcal</th>
-      <th onclick="sortBy('score')">Score</th>
-    </tr>
-  </thead>
-  <tbody id="tbody"></tbody>
-</table>
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th class="excl">✕</th>
+          <th onclick="sortBy('name')">Name</th>
+          <th onclick="sortBy('size')">Size</th>
+          <th onclick="sortBy('price')">Price</th>
+          <th onclick="sortBy('kcal')">Kcal</th>
+          <th onclick="sortBy('protein')">Protein</th>
+          <th onclick="sortBy('ppp')">£/protein g</th>
+          <th onclick="sortBy('pkc')">p/kcal</th>
+          <th onclick="sortBy('score')">Score</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
 
-<script>
-const KEY = 'parsleybox';
-const products = [
-  {"id":"pb_chicken_king","name":"Chicken a la King with Rice","price":4.49,"size":"350g","kcal":375,"protein":17.5,"slug":"chicken-a-la-king-with-rice"},
-  {"id":"pb_sweet_sour","name":"Sweet & Sour Chicken with Rice","price":4.49,"size":"350g","kcal":467,"protein":18.6,"slug":"sweet-and-sour-chicken-with-rice"},
-  {"id":"pb_chasseur","name":"Chicken Chasseur with Rice","price":4.49,"size":"350g","kcal":392,"protein":27.1,"slug":"chicken-chasseur-with-rice"},
-  {"id":"pb_thai_ginger","name":"Thai Style Ginger & Lemon Chicken with Rice","price":4.49,"size":"350g","kcal":454,"protein":22.6,"slug":"thai-style-ginger-and-lemon-chicken-with-rice"},
-  {"id":"pb_korma","name":"Chicken Korma with Rice","price":4.49,"size":"350g","kcal":697,"protein":24.3,"slug":"chicken-korma-with-rice"},
-  {"id":"pb_tikka","name":"Chicken Tikka Masala with Rice","price":4.49,"size":"350g","kcal":627,"protein":29.3,"slug":"chicken-tikka-masala-with-rice"},
-  {"id":"pb_coq_au_vin","name":"Coq au Vin with Mashed Potatoes","price":4.49,"size":"375g","kcal":389,"protein":27.6,"slug":"coq-au-vin-with-mashed-potatoes"},
-  {"id":"pb_spanish","name":"Spanish Style Chicken with Rice","price":4.49,"size":"350g","kcal":357,"protein":19.6,"slug":"spanish-style-chicken-with-rice"}
-];
+    <script>
+      const KEY = 'parsleybox';
+      let products = [];
+      async function loadProducts() {
+        const r = await fetch('data/parsleybox_all_products.json', { cache: 'no-store' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const raw = await r.json();
+        // Three observed JSON shapes across scraper outputs:
+        //   tesco       -> { "frozen":   [...] }
+        //   ms          -> [...]                     (bare list at root)
+        //   parsleybox  -> { "products": [...] }
+        //   iceland     -> { "products": [...] }
+        products = Array.isArray(raw) ? raw : raw.frozen || raw.products || [];
+      }
 
-let excluded = new Set();
-let currentSort = {key: 'score', dir: -1};
-let searchTerm = '';
+      let excluded = new Set();
+      let currentSort = { key: 'score', dir: -1 };
+      let searchTerm = '';
 
-function pbUrl(p) {
-  return `https://www.parsleybox.com/meals/${p.slug}`;
-}
+      function pbUrl(p) {
+        return `https://www.parsleybox.com/meals/${p.slug}`;
+      }
 
-function fmt(v, d=1) { return v==null ? '<span class="null">—</span>' : v.toFixed(d); }
+      function fmt(v, d = 1) {
+        return v == null ? '<span class="null">—</span>' : v.toFixed(d);
+      }
 
-function render() {
-  const term = searchTerm.toLowerCase();
-  const rows = products
-    .filter(p => !term || p.name.toLowerCase().includes(term))
-    .map(p => ({...p, ppp: p.price && p.protein ? p.price/p.protein : null, pkc: p.price && p.kcal ? p.price*100/p.kcal : null, score: p.price && p.kcal && p.protein ? (p.protein*p.protein*4)/(p.price*p.kcal) : null}))
-    .sort((a,b) => {
-      let av=a[currentSort.key], bv=b[currentSort.key];
-      if(av==null&&bv==null) return 0; if(av==null) return 1; if(bv==null) return -1;
-      if(typeof av==='string') return av.localeCompare(bv)*currentSort.dir;
-      return (av-bv)*currentSort.dir;
-    });
+      function render() {
+        const term = searchTerm.toLowerCase();
+        const rows = products
+          .filter(p => !term || p.name.toLowerCase().includes(term))
+          .map(p => ({
+            ...p,
+            ppp: p.price && p.protein ? p.price / p.protein : null,
+            pkc: p.price && p.kcal ? (p.price * 100) / p.kcal : null,
+            score: p.price && p.kcal && p.protein ? (p.protein * p.protein * 4) / (p.price * p.kcal) : null,
+          }))
+          .sort((a, b) => {
+            let av = a[currentSort.key],
+              bv = b[currentSort.key];
+            if (av == null && bv == null) return 0;
+            if (av == null) return 1;
+            if (bv == null) return -1;
+            if (typeof av === 'string') return av.localeCompare(bv) * currentSort.dir;
+            return (av - bv) * currentSort.dir;
+          });
 
-  document.getElementById('tbody').innerHTML = rows.map(p => {
-    const ex = excluded.has(p.id);
-    const url = pbUrl(p);
-    const nameCell = `<a href="${url}" target="_blank" rel="noopener">${p.name}</a>`;
-    return `<tr class="${ex?'excluded':''}" data-id="${p.id}">
-      <td class="excl"><input type="checkbox" ${ex?'checked':''} onchange="toggle('${p.id}')"></td>
+        document.getElementById('tbody').innerHTML = rows
+          .map(p => {
+            const ex = excluded.has(p.id);
+            const url = pbUrl(p);
+            const nameCell = `<a href="${url}" target="_blank" rel="noopener">${p.name}</a>`;
+            return `<tr class="${ex ? 'excluded' : ''}" data-id="${p.id}">
+      <td class="excl"><input type="checkbox" ${ex ? 'checked' : ''} onchange="toggle('${p.id}')"></td>
       <td class="name">${nameCell}<br><span class="ambient">Ambient — no freezer needed</span></td>
-      <td>${p.size||'—'}</td>
+      <td>${p.size || '—'}</td>
       <td class="price">£${p.price.toFixed(2)}</td>
-      <td class="kcal">${fmt(p.kcal,0)}</td>
-      <td class="protein">${fmt(p.protein,1)}<small>g</small></td>
-      <td class="protein">${p.ppp!=null?'£'+fmt(p.ppp,3):'<span class="null">—</span>'}</td>
-      <td class="protein">${p.pkc!=null?fmt(p.pkc,2)+'p':'<span class="null">—</span>'}</td>
-      <td class="protein" style="font-weight:${p.score>3?'700':'400'};color:${p.score>3?'#2e7d32':p.score>1.5?'inherit':'#aaa'}">${p.score!=null?fmt(p.score,2):'<span class="null">—</span>'}</td>
+      <td class="kcal">${fmt(p.kcal, 0)}</td>
+      <td class="protein">${fmt(p.protein, 1)}<small>g</small></td>
+      <td class="protein">${p.ppp != null ? '£' + fmt(p.ppp, 3) : '<span class="null">—</span>'}</td>
+      <td class="protein">${p.pkc != null ? fmt(p.pkc, 2) + 'p' : '<span class="null">—</span>'}</td>
+      <td class="protein" style="font-weight:${p.score > 3 ? '700' : '400'};color:${p.score > 3 ? '#2e7d32' : p.score > 1.5 ? 'inherit' : '#aaa'}">${p.score != null ? fmt(p.score, 2) : '<span class="null">—</span>'}</td>
     </tr>`;
-  }).join('');
+          })
+          .join('');
 
-  updateStats();
-  document.getElementById('excluded-count').textContent = excluded.size ? `${excluded.size} excluded` : '';
-}
+        updateStats();
+        document.getElementById('excluded-count').textContent = excluded.size ? `${excluded.size} excluded` : '';
+      }
 
-function updateStats() {
-  const kept = products.filter(p => !excluded.has(p.id));
-  const prices   = kept.map(p => p.price).filter(x=>x);
-  const kcals    = kept.map(p => p.kcal).filter(x=>x&&x>100);
-  const proteins = kept.map(p => p.protein).filter(x=>x&&x>1&&x<100);
-  const ppps     = kept.filter(p=>p.price&&p.protein&&p.protein<100).map(p=>p.price/p.protein);
-  const avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : null;
-  const ap=avg(prices), ak=avg(kcals), apr=avg(proteins), appp=avg(ppps);
-  document.getElementById('s-count').textContent = kept.length;
-  document.getElementById('s-price').textContent = ap ? '£'+ap.toFixed(2) : '—';
-  document.getElementById('s-kcal').textContent = ak ? Math.round(ak) : '—';
-  document.getElementById('s-protein').textContent = apr ? apr.toFixed(1)+'g' : '—';
-  document.getElementById('s-cpp').textContent = appp ? '£'+appp.toFixed(3) : '—';
-}
+      function updateStats() {
+        const kept = products.filter(p => !excluded.has(p.id));
+        const prices = kept.map(p => p.price).filter(x => x);
+        const kcals = kept.map(p => p.kcal).filter(x => x && x > 100);
+        const proteins = kept.map(p => p.protein).filter(x => x && x > 1 && x < 100);
+        const ppps = kept.filter(p => p.price && p.protein && p.protein < 100).map(p => p.price / p.protein);
+        const avg = a => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+        const ap = avg(prices),
+          ak = avg(kcals),
+          apr = avg(proteins),
+          appp = avg(ppps);
+        document.getElementById('s-count').textContent = kept.length;
+        document.getElementById('s-price').textContent = ap ? '£' + ap.toFixed(2) : '—';
+        document.getElementById('s-kcal').textContent = ak ? Math.round(ak) : '—';
+        document.getElementById('s-protein').textContent = apr ? apr.toFixed(1) + 'g' : '—';
+        document.getElementById('s-cpp').textContent = appp ? '£' + appp.toFixed(3) : '—';
+      }
 
-function toggle(id) { excluded.has(id)?excluded.delete(id):excluded.add(id); render(); scheduleSave(); }
-function selectAll(ex) {
-  const t=searchTerm.toLowerCase();
-  products.filter(p=>!t||p.name.toLowerCase().includes(t)).forEach(p=>ex?excluded.add(p.id):excluded.delete(p.id));
-  render(); scheduleSave();
-}
-function applyFilter() { searchTerm=document.getElementById('search').value; render(); }
-function sortBy(k) { currentSort.key===k?currentSort.dir*=-1:(currentSort={key:k,dir:1}); render(); }
+      function toggle(id) {
+        excluded.has(id) ? excluded.delete(id) : excluded.add(id);
+        render();
+        scheduleSave();
+      }
+      function selectAll(ex) {
+        const t = searchTerm.toLowerCase();
+        products
+          .filter(p => !t || p.name.toLowerCase().includes(t))
+          .forEach(p => (ex ? excluded.add(p.id) : excluded.delete(p.id)));
+        render();
+        scheduleSave();
+      }
+      function applyFilter() {
+        searchTerm = document.getElementById('search').value;
+        render();
+      }
+      function sortBy(k) {
+        currentSort.key === k ? (currentSort.dir *= -1) : (currentSort = { key: k, dir: 1 });
+        render();
+      }
 
-const LS_KEY = 'excl_' + KEY;
-let saveTimer = null;
-function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(saveExclusions, 400); }
-function saveExclusions() {
-  localStorage.setItem(LS_KEY, JSON.stringify([...excluded]));
-}
-function loadExclusions() {
-  try {
-    JSON.parse(localStorage.getItem(LS_KEY) || '[]').forEach(id=>excluded.add(id));
-  } catch(e) {}
-  render();
-}
-loadExclusions();
-</script>
-</body>
+      const LS_KEY = 'excl_' + KEY;
+      let saveTimer = null;
+      function scheduleSave() {
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(saveExclusions, 400);
+      }
+      function saveExclusions() {
+        localStorage.setItem(LS_KEY, JSON.stringify([...excluded]));
+      }
+      function loadExclusions() {
+        try {
+          JSON.parse(localStorage.getItem(LS_KEY) || '[]').forEach(id => excluded.add(id));
+        } catch (e) {}
+        render();
+      }
+      (async () => {
+        try {
+          await loadProducts();
+        } catch (e) {
+          document.getElementById('tbody').innerHTML =
+            '<tr><td colspan="99" style="padding:20px;text-align:center;color:#f85149">' +
+            'Failed to load Parsley Box ambient meals: ' +
+            e.message +
+            '</td></tr>';
+          return;
+        }
+        loadExclusions();
+      })();
+    </script>
+  </body>
 </html>

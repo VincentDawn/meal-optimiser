@@ -1,139 +1,257 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Meal Optimiser — UK ready-meal cost &amp; time analysis</title>
-<meta name="description" content="Compare UK ready-meal strategies — supermarkets, frozen, delivery services — by cost, calories, protein and active prep time. Set your hourly rate, see what's actually worth it.">
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #cdd9e5; padding: 48px 24px; line-height: 1.5; }
-  .wrap { max-width: 920px; margin: 0 auto; }
-  h1 { font-size: 1.7rem; color: #fff; margin-bottom: 6px; }
-  .lede { color: #8b949e; font-size: 0.95rem; margin-bottom: 32px; max-width: 640px; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Meal Optimiser — UK ready-meal cost &amp; time analysis</title>
+    <meta
+      name="description"
+      content="Compare UK ready-meal strategies — supermarkets, frozen, delivery services — by cost, calories, protein and active prep time. Set your hourly rate, see what's actually worth it."
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        background: #0d1117;
+        color: #cdd9e5;
+        padding: 48px 24px;
+        line-height: 1.5;
+      }
+      .wrap {
+        max-width: 920px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 1.7rem;
+        color: #fff;
+        margin-bottom: 6px;
+      }
+      .lede {
+        color: #8b949e;
+        font-size: 0.95rem;
+        margin-bottom: 32px;
+        max-width: 640px;
+      }
 
-  .hero {
-    display: block; text-decoration: none; color: inherit;
-    background: linear-gradient(135deg, #1c3052, #16344e);
-    border: 1px solid #2f4a6e; border-radius: 12px;
-    padding: 28px 30px; margin-bottom: 36px;
-    transition: border-color 0.15s, transform 0.1s;
-  }
-  .hero:hover { border-color: #58a6ff; }
-  .hero:active { transform: translateY(1px); }
-  .hero .label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #58a6ff; }
-  .hero .name { font-size: 1.4rem; font-weight: 700; color: #fff; margin: 6px 0 10px; }
-  .hero .desc { color: #b8c4d4; font-size: 0.92rem; max-width: 560px; }
-  .hero .arrow { display: inline-block; margin-top: 14px; font-size: 0.85rem; color: #58a6ff; font-weight: 600; }
+      .hero {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        background: linear-gradient(135deg, #1c3052, #16344e);
+        border: 1px solid #2f4a6e;
+        border-radius: 12px;
+        padding: 28px 30px;
+        margin-bottom: 36px;
+        transition:
+          border-color 0.15s,
+          transform 0.1s;
+      }
+      .hero:hover {
+        border-color: #58a6ff;
+      }
+      .hero:active {
+        transform: translateY(1px);
+      }
+      .hero .label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #58a6ff;
+      }
+      .hero .name {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 6px 0 10px;
+      }
+      .hero .desc {
+        color: #b8c4d4;
+        font-size: 0.92rem;
+        max-width: 560px;
+      }
+      .hero .arrow {
+        display: inline-block;
+        margin-top: 14px;
+        font-size: 0.85rem;
+        color: #58a6ff;
+        font-weight: 600;
+      }
 
-  h2.section { font-size: 0.78rem; color: #6e7681; text-transform: uppercase; letter-spacing: 0.06em; margin: 28px 0 14px; }
-  .grid { display: flex; flex-wrap: wrap; gap: 14px; }
-  .card {
-    background: #161b22; border-radius: 10px; border: 1px solid #30363d;
-    padding: 18px; width: 220px; text-decoration: none; color: inherit;
-    display: flex; flex-direction: column; gap: 6px;
-    transition: border-color 0.15s;
-  }
-  .card:hover { border-color: #58a6ff; }
-  .card .label { font-size: 0.66rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #6e7681; }
-  .card .name { font-size: 1.05rem; font-weight: 700; color: #fff; }
-  .card .stats { font-size: 0.78rem; color: #8b949e; margin-top: 2px; }
-  .card .stats span { display: block; }
-  .card .tag {
-    display: inline-block; font-size: 0.66rem; padding: 2px 8px;
-    border-radius: 10px; margin-top: 6px; font-weight: 600;
-    background: #21262d; color: #8b949e; align-self: flex-start;
-  }
-  .tag.svc { background: #1a3a1a; color: #7acc7a; }
+      h2.section {
+        font-size: 0.78rem;
+        color: #6e7681;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin: 28px 0 14px;
+      }
+      .grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+      .card {
+        background: #161b22;
+        border-radius: 10px;
+        border: 1px solid #30363d;
+        padding: 18px;
+        width: 220px;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        transition: border-color 0.15s;
+      }
+      .card:hover {
+        border-color: #58a6ff;
+      }
+      .card .label {
+        font-size: 0.66rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6e7681;
+      }
+      .card .name {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #fff;
+      }
+      .card .stats {
+        font-size: 0.78rem;
+        color: #8b949e;
+        margin-top: 2px;
+      }
+      .card .stats span {
+        display: block;
+      }
+      .card .tag {
+        display: inline-block;
+        font-size: 0.66rem;
+        padding: 2px 8px;
+        border-radius: 10px;
+        margin-top: 6px;
+        font-weight: 600;
+        background: #21262d;
+        color: #8b949e;
+        align-self: flex-start;
+      }
+      .tag.svc {
+        background: #1a3a1a;
+        color: #7acc7a;
+      }
 
-  footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #21262d; color: #6e7681; font-size: 0.78rem; }
-  footer a { color: #8b949e; }
-</style>
-</head>
-<body>
-<!--
+      footer {
+        margin-top: 48px;
+        padding-top: 20px;
+        border-top: 1px solid #21262d;
+        color: #6e7681;
+        font-size: 0.78rem;
+      }
+      footer a {
+        color: #8b949e;
+      }
+    </style>
+  </head>
+  <body>
+    <!--
   Shared site nav. Inlined into every page (no JS partials in a static site).
   Keep markup IDENTICAL across pages — only the `aria-current` attribute moves
   to mark the active page.
 -->
-<nav class="site-nav">
-  <a class="site-nav-brand" aria-current="page" href="index.html">Meal Optimiser</a>
-  <a href="meal-analysis.html">Dashboard</a>
-  <a href="tesco-filter.html">Tesco</a>
-  <a href="ms-filter.html">M&amp;S</a>
-  <a href="iceland-filter.html">Iceland</a>
-  <a href="parsleybox-filter.html">Parsley Box</a>
-</nav>
+    <nav class="site-nav">
+      <a class="site-nav-brand" aria-current="page" href="index.html">Meal Optimiser</a>
+      <a href="meal-analysis.html">Dashboard</a>
+      <a href="tesco-filter.html">Tesco</a>
+      <a href="ms-filter.html">M&amp;S</a>
+      <a href="iceland-filter.html">Iceland</a>
+      <a href="parsleybox-filter.html">Parsley Box</a>
+    </nav>
 
+    <div class="wrap">
+      <h1>Meal Optimiser</h1>
+      <p class="lede">
+        Figure out the cheapest — or fastest, or most-protein-per-pound — way to feed yourself in the UK.
+      </p>
+      <p class="lede" style="margin-top: 6px">
+        Today: ranks ~25 ready-meal strategies (DIY cooking, supermarket frozen, local delivery services) by cost,
+        calories, protein and active prep time. Tell it what your hour's worth and it tells you which actually beat
+        cooking from scratch.
+      </p>
+      <p class="lede" style="margin-top: 6px; color: #6e7681">
+        Where it's going: pick your own ranking formula (weight protein vs cost vs time however you want), then expand
+        beyond ready meals into per-item shopping-cart routing — drop a Mars bar into a basket and find the supermarket
+        that wins it.
+      </p>
 
-<div class="wrap">
+      <a class="hero" href="meal-analysis.html">
+        <span class="label">Main dashboard</span>
+        <div class="name">Open the analysis →</div>
+        <div class="desc">
+          Live charts, ranked options, your settings save in your browser. Configure per-store drive times and delivery
+          fees, exclude services that don't deliver to your area, and see the rankings shift in real time.
+        </div>
+        <div class="arrow">meal-analysis.html →</div>
+      </a>
 
-  <h1>Meal Optimiser</h1>
-  <p class="lede">Figure out the cheapest — or fastest, or most-protein-per-pound — way to feed yourself in the UK.</p>
-  <p class="lede" style="margin-top:6px">Today: ranks ~25 ready-meal strategies (DIY cooking, supermarket frozen, local delivery services) by cost, calories, protein and active prep time. Tell it what your hour's worth and it tells you which actually beat cooking from scratch.</p>
-  <p class="lede" style="margin-top:6px;color:#6e7681">Where it's going: pick your own ranking formula (weight protein vs cost vs time however you want), then expand beyond ready meals into per-item shopping-cart routing — drop a Mars bar into a basket and find the supermarket that wins it.</p>
+      <h2 class="section">Per-supplier filter tools</h2>
+      <p style="color: #8b949e; font-size: 0.85rem; margin-bottom: 16px; max-width: 640px">
+        Drill into any supplier's full product list to tick off items you'd never eat (kids' meals, sandwiches, etc.).
+        Your exclusions persist in your browser and feed straight back into the analysis above — averages recompute
+        live.
+      </p>
 
-  <a class="hero" href="meal-analysis.html">
-    <span class="label">Main dashboard</span>
-    <div class="name">Open the analysis →</div>
-    <div class="desc">Live charts, ranked options, your settings save in your browser. Configure per-store drive times and delivery fees, exclude services that don't deliver to your area, and see the rankings shift in real time.</div>
-    <div class="arrow">meal-analysis.html →</div>
-  </a>
+      <div class="grid">
+        <a class="card" href="tesco-filter.html">
+          <span class="label">Supermarket</span>
+          <span class="name">Tesco Frozen</span>
+          <div class="stats">
+            <span>147 products</span>
+            <span>£0.99 – £5.00</span>
+          </div>
+          <span class="tag">Supermarket</span>
+        </a>
 
-  <h2 class="section">Per-supplier filter tools</h2>
-  <p style="color:#8b949e;font-size:0.85rem;margin-bottom:16px;max-width:640px">
-    Drill into any supplier's full product list to tick off items you'd never eat (kids' meals, sandwiches, etc.). Your exclusions persist in your browser and feed straight back into the analysis above — averages recompute live.
-  </p>
+        <a class="card" href="ms-filter.html">
+          <span class="label">Supermarket (online)</span>
+          <span class="name">M&amp;S via Ocado</span>
+          <div class="stats">
+            <span>302 products</span>
+            <span>3-for-£10 deal flagged</span>
+          </div>
+          <span class="tag">Supermarket</span>
+        </a>
 
-  <div class="grid">
+        <a class="card" href="iceland-filter.html">
+          <span class="label">Supermarket</span>
+          <span class="name">Iceland</span>
+          <div class="stats">
+            <span>237 products</span>
+            <span>£0.75 – £6.00</span>
+          </div>
+          <span class="tag">Supermarket</span>
+        </a>
 
-    <a class="card" href="tesco-filter.html">
-      <span class="label">Supermarket</span>
-      <span class="name">Tesco Frozen</span>
-      <div class="stats">
-        <span>147 products</span>
-        <span>£0.99 – £5.00</span>
+        <a class="card" href="parsleybox-filter.html">
+          <span class="label">Delivery service</span>
+          <span class="name">Parsley Box</span>
+          <div class="stats">
+            <span>Ambient ready meals</span>
+            <span>UK-wide delivery</span>
+          </div>
+          <span class="tag svc">Delivery</span>
+        </a>
       </div>
-      <span class="tag">Supermarket</span>
-    </a>
 
-    <a class="card" href="ms-filter.html">
-      <span class="label">Supermarket (online)</span>
-      <span class="name">M&amp;S via Ocado</span>
-      <div class="stats">
-        <span>302 products</span>
-        <span>3-for-£10 deal flagged</span>
-      </div>
-      <span class="tag">Supermarket</span>
-    </a>
-
-    <a class="card" href="iceland-filter.html">
-      <span class="label">Supermarket</span>
-      <span class="name">Iceland</span>
-      <div class="stats">
-        <span>237 products</span>
-        <span>£0.75 – £6.00</span>
-      </div>
-      <span class="tag">Supermarket</span>
-    </a>
-
-    <a class="card" href="parsleybox-filter.html">
-      <span class="label">Delivery service</span>
-      <span class="name">Parsley Box</span>
-      <div class="stats">
-        <span>Ambient ready meals</span>
-        <span>UK-wide delivery</span>
-      </div>
-      <span class="tag svc">Delivery</span>
-    </a>
-
-  </div>
-
-  <footer>
-    Product data refreshed weekly via independent scrapers. Personal settings (hourly rate, meals per week, store distances, exclusions) live only in your browser's localStorage — nothing leaves your device.
-  </footer>
-
-</div>
-
-</body>
+      <footer>
+        Product data refreshed weekly via independent scrapers. Personal settings (hourly rate, meals per week, store
+        distances, exclusions) live only in your browser's localStorage — nothing leaves your device.
+      </footer>
+    </div>
+  </body>
 </html>
