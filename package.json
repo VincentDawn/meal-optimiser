@@ -7,10 +7,24 @@
     "serve": "python -m http.server 8765",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
-    "test:headed": "playwright test --headed"
+    "test:headed": "playwright test --headed",
+    "lint": "eslint .",
+    "lint:css": "stylelint \"assets/**/*.css\"",
+    "lint:html": "html-validate \"*.html\"",
+    "format": "prettier --check \"**/*.{js,css,html,json,md}\"",
+    "format:fix": "prettier --write \"**/*.{js,css,html,json,md}\"",
+    "typecheck": "tsc -p jsconfig.json",
+    "check": "npm run format && npm run lint && npm run lint:css && npm run lint:html && npm run typecheck"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.48.0",
-    "prettier": "^3.8.3"
+    "eslint": "^10.4.0",
+    "globals": "^17.6.0",
+    "html-validate": "^11.1.0",
+    "prettier": "^3.8.3",
+    "stylelint": "^17.11.1",
+    "stylelint-config-standard": "^40.0.0",
+    "typescript": "^6.0.3"
   }
 }

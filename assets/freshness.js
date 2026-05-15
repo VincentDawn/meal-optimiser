@@ -45,7 +45,8 @@
     if (!meta || !meta.suppliers) return;
     document.querySelectorAll('.last-refreshed').forEach(el => {
       const key =
-        el.dataset.supplier || location.pathname.split('/').pop().replace('-filter.html', '');
+        /** @type {HTMLElement} */ (el).dataset.supplier ||
+        location.pathname.split('/').pop().replace('-filter.html', '');
       const s = meta.suppliers[key];
       el.textContent = s ? format(s.scraped_at) : '?';
     });

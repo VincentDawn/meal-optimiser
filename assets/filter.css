@@ -1,6 +1,6 @@
 /* ─── Shared site styles for filter pages ────────────────────────────────────
  * One stylesheet, four filter pages.  Aligns the look with the dashboard
- * (GitHub-dark palette).  Drop-in replacement for each page's old <style>
+ * (GitHub-dark palette).  Drop-in replacement for each page's old \3c style>
  * block — it's loaded via <link> so future tweaks happen in one place.
  */
 * {
@@ -8,6 +8,7 @@
   margin: 0;
   padding: 0;
 }
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   font-size: 14px;
@@ -29,18 +30,22 @@ body {
   z-index: 20;
   font-size: 0.82rem;
 }
+
 .site-nav a {
   color: #8b949e;
   text-decoration: none;
   padding: 4px 0;
 }
+
 .site-nav a:hover {
   color: #cdd9e5;
 }
+
 .site-nav a[aria-current='page'] {
   color: #fff;
   font-weight: 600;
 }
+
 .site-nav-brand {
   color: #fff !important;
   font-weight: 700;
@@ -54,11 +59,13 @@ h1 {
   color: #fff;
   font-weight: 700;
 }
+
 .page-sub {
   padding: 0 22px 14px;
   font-size: 0.8rem;
   color: #6e7681;
 }
+
 .page-sub .ts {
   color: #8b949e;
 }
@@ -77,15 +84,18 @@ h1 {
   align-items: center;
   border-bottom: 1px solid #21262d;
 }
+
 #stats .stat {
   text-align: center;
 }
+
 #stats .stat .val {
   font-size: 1.4rem;
   font-weight: 700;
   color: #fff;
   line-height: 1;
 }
+
 #stats .stat .lbl {
   font-size: 0.66rem;
   color: #6e7681;
@@ -93,6 +103,7 @@ h1 {
   letter-spacing: 0.06em;
   margin-top: 4px;
 }
+
 #stats .sep {
   width: 1px;
   background: #30363d;
@@ -109,6 +120,7 @@ h1 {
   align-items: center;
   flex-wrap: wrap;
 }
+
 #controls input[type='text'] {
   background: #0d1117;
   border: 1px solid #30363d;
@@ -118,10 +130,12 @@ h1 {
   font-size: 0.82rem;
   width: 280px;
 }
+
 #controls input[type='text']:focus {
   outline: none;
   border-color: #58a6ff;
 }
+
 button {
   background: #21262d;
   color: #cdd9e5;
@@ -131,17 +145,21 @@ button {
   cursor: pointer;
   font-size: 0.78rem;
 }
+
 button:hover {
   background: #30363d;
 }
+
 button.danger {
   background: #5a1d1d;
   color: #fda4a4;
   border-color: #6e2222;
 }
+
 button.danger:hover {
   background: #7a2424;
 }
+
 #excluded-count {
   font-size: 0.78rem;
   color: #8b949e;
@@ -153,6 +171,7 @@ table {
   width: 100%;
   border-collapse: collapse;
 }
+
 th {
   background: #161b22;
   color: #8b949e;
@@ -169,63 +188,78 @@ th {
   letter-spacing: 0.05em;
   font-weight: 600;
 }
+
 th:hover {
   color: #cdd9e5;
 }
+
 th .sort-arrow {
   margin-left: 4px;
   opacity: 0.4;
 }
+
 th.sorted .sort-arrow {
   opacity: 1;
 }
+
 td {
   padding: 7px 12px;
   border-bottom: 1px solid #21262d;
   vertical-align: middle;
   color: #cdd9e5;
 }
+
 tr:hover td {
   background: #161b22;
 }
+
 tr.excluded {
   opacity: 0.4;
 }
+
 tr.excluded td {
   text-decoration: line-through;
   color: #6e7681;
 }
+
 td.name {
   max-width: 360px;
 }
+
 td.name a {
   color: inherit;
   text-decoration: none;
 }
+
 td.name a:hover {
   text-decoration: underline;
   color: #58a6ff;
 }
+
 td.price,
 td.kcal,
 td.protein {
   text-align: right;
   width: 90px;
 }
+
 td.excl {
   text-align: center;
   width: 40px;
 }
+
 input[type='checkbox'] {
   width: 14px;
   height: 14px;
   cursor: pointer;
   accent-color: #f85149;
 }
+
 .null {
   color: #484f58;
   font-style: italic;
 }
+
 .deal,
 .ambient {
   font-size: 0.66rem;
@@ -236,9 +270,11 @@ input[type='checkbox'] {
   border-radius: 8px;
   margin-left: 4px;
 }
+
 .finest {
   border-left: 2px solid #d29922;
 }
+
 .finest td.name::before {
   content: '★ ';
   color: #d29922;

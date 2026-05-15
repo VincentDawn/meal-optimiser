@@ -1,0 +1,34 @@
+{
+  "//": "tsc --checkJs runs across the simpler vanilla-JS files.  dashboard.js is excluded — it's heavy on dynamic DOM access and CDN globals (Chart.js, Hammer) which need 30+ JSDoc casts to satisfy strict TS.  ESLint covers it instead.  Anything new written here should add the file to `include`.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "noImplicitThis": false,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "resolveJsonModule": true,
+    "types": [],
+    "skipLibCheck": true,
+    "noResolve": false
+  },
+  "include": [
+    "meal-data.js",
+    "assets/freshness.js",
+    "tests/**/*.js",
+    "playwright.config.js",
+    "types/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "data",
+    "playwright-report",
+    "test-results",
+    ".playwright-mcp",
+    ".dev-tools"
+  ]
+}

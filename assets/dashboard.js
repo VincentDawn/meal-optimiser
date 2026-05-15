@@ -115,17 +115,6 @@ function weeklyCost(opt) {
   return (opt.costPerMeal || 0) * MEALS + deliveryCostPerWeek(opt);
 }
 
-/**
- * Returns a warning string if the user's weekly spend on this option falls
- * below the supplier's minimum order amount.  Empty string = no warning.
- */
-function minOrderWarning(opt) {
-  const min = getField(opt, 'minOrder') || 0;
-  if (min <= 0) return '';
-  const weeklyMealCost = (opt.costPerMeal || 0) * MEALS;
-  if (weeklyMealCost >= min) return '';
-  return `Min £${min}/order — your weekly spend is £${weeklyMealCost.toFixed(0)}`;
-}
 let COOK_MINS = (() => {
   const v = parseInt(localStorage.getItem('meal_optimiser_cook_mins'));
   return isFinite(v) && v >= 0 ? v : 8;
@@ -463,7 +452,6 @@ function dqBadge(q) {
 function updateAll() {
   const diy = diyHrs();
   const ready = readyHrs();
-  const baseCost = weeklyCost(OPTS.find(o => o.baseline));
 
   // Stats
   document.getElementById('sNetRate').textContent = `£${NET_EMPLOYMENT.toFixed(2)}/hr`;
@@ -552,12 +540,13 @@ function updateAll() {
       if (opt.baseline) tr.className = 'baseline';
       else if (opt.dominated) tr.className = 'dominated';
 
-      let badge = '';
-      if (opt.baseline) badge = '<span class="pill pa">Baseline</span>';
-      else if (dominated) badge = '<span class="pill pgr">Dominated</span>';
-      else if (justified) badge = '<span class="pill pg">✓ Yes</span>';
-      else
-        badge = `<span class="pill pr">✗ No</span><div class="unlock-note">needs £${be?.toFixed(2) || '?'}/hr</div>`;
+      const badge = opt.baseline
+        ? '<span class="pill pa">Baseline</span>'
+        : dominated
+          ? '<span class="pill pgr">Dominated</span>'
+          : justified
+            ? '<span class="pill pg">✓ Yes</span>'
+            : `<span class="pill pr">✗ No</span><div class="unlock-note">needs £${be?.toFixed(2) || '?'}/hr</div>`;
 
       const kcalPer100 = opt.calories ? ((opt.costPerMeal / opt.calories) * 100).toFixed(2) : '—';
       const protPer10 = opt.protein ? ((opt.costPerMeal / opt.protein) * 10).toFixed(2) : '—';
@@ -673,14 +662,17 @@ function attachPerStoreHandlers() {
   });
 }
 
-function resetPerStoreOverrides() {
+// Exposed on window because it's called from an inline onclick="" in the
+// per-store-settings disclosure markup.  Direct attachment to window keeps
+// ESLint happy (no false-positive "unused" warning) and signals intent.
+window.resetPerStoreOverrides = function () {
   if (!confirm('Reset all per-store overrides back to defaults? This cannot be undone.')) return;
   optionOverrides = {};
   saveOverrides();
   renderPerStoreTable();
   attachPerStoreHandlers();
   updateAll();
-}
+};
 
 // ── Live aggregation from scraped product files ─────────────────────────────
 // For supermarket/service options that we have a full scraped product list

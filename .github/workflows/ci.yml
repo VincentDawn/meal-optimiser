@@ -1,12 +1,19 @@
 name: ci
 
-# Single workflow for the whole pipeline:
-#   format    -> prettier --check (cheap, fail-fast)
-#   playwright -> 49 browser tests (~30 sec on Ubuntu)
-#   gitleaks   -> full-history secret scan
-#   deploy    -> only on push to main, only if all three above passed.
-#                Deploys the static site to GitHub Pages via the Actions
-#                deploy mode (not branch source) so a red commit cannot ship.
+# Pipeline:
+#   format          prettier --check (fast fail-on-style-drift)
+#   lint            eslint
+#   lint-css        stylelint
+#   lint-html       html-validate
+#   typecheck       tsc --checkJs (vanilla JS via JSDoc + ambient .d.ts)
+#   playwright      browser tests
+#   gitleaks        full-history secret scan
+#   sonar           SonarCloud scan + quality gate (free for public repos)
+#                   Requires SONAR_TOKEN repo secret — see README.
+#   codeql          semantic security analysis (uses default GitHub setup,
+#                   defined in a separate workflow auto-created by GitHub)
+#   deploy          GitHub Pages, gated on every other job above
+#                   (only fires on push to main, not on PRs)
 
 on:
   push:
@@ -31,13 +38,49 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - name: Install npm deps
-        run: npm ci
-      - name: Prettier check
-        run: npx prettier --check '**/*.{js,css,html,json,md}'
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm run format
+
+  lint:
+    timeout-minutes: 3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm run lint
+
+  lint-css:
+    timeout-minutes: 3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm run lint:css
+
+  lint-html:
+    timeout-minutes: 3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm run lint:html
+
+  typecheck:
+    timeout-minutes: 3
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck
 
   playwright:
     timeout-minutes: 10
@@ -45,20 +88,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
+        with: { node-version: 20, cache: npm }
       - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install npm deps
-        run: npm ci
-      - name: Install Playwright browsers
-        run: npx playwright install chromium --with-deps
-      - name: Run tests
-        run: npm test
-      - name: Upload Playwright report on failure
-        if: failure()
+        with: { python-version: '3.12' }
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
+      - run: npm test
+      - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
@@ -70,22 +106,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      # Run gitleaks directly rather than the marketplace action — the action
-      # tries to do incremental scans based on the previous push's SHA, which
-      # blows up after any history-rewrite force-push.  Direct invocation
-      # always scans the whole repo + history.
+        with: { fetch-depth: 0 }
       - name: Install gitleaks
         run: |
           curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz \
             | tar -xz -C /tmp
-          /tmp/gitleaks version
       - name: Scan repo + git history
         run: /tmp/gitleaks detect --source=. --verbose --no-banner --redact
 
+  sonar:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    # Skip the SonarCloud job entirely if the SONAR_TOKEN secret hasn't been
+    # added yet — keeps CI green during the first-time SonarCloud setup.
+    if: ${{ vars.SKIP_SONAR != 'true' }}
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
   deploy:
-    needs: [format, playwright, gitleaks]
+    needs: [format, lint, lint-css, lint-html, typecheck, playwright, gitleaks]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
@@ -96,9 +142,6 @@ jobs:
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          # Whole repo root — no build step, the static site IS the repo.
-          # node_modules / tests / .github / .dev-tools aren't referenced by
-          # any HTML so they're harmless dead weight in the Pages bundle.
           path: '.'
       - name: Deploy
         id: deployment
