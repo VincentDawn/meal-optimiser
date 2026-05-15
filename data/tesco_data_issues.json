@@ -1,0 +1,155 @@
+{
+  "scraper_bugs_fixed": [
+    {
+      "id": "320397651",
+      "name": "Kitchen Joy Chicken Panang Rich Coconut & Lime Curry with Jasmine Rice 350g",
+      "kcal_was": 152,
+      "kcal_fixed": 512,
+      "note": "scraper grabbed per-100g kcal instead of per-pack",
+      "fixed_date": "2026-03-22"
+    },
+    {
+      "id": "318280244",
+      "name": "Kitchen Joy Thai Green Chicken Lemongrass & Coconut Curry with Noodles 320g",
+      "kcal_was": 154,
+      "kcal_fixed": 459,
+      "note": "scraper grabbed per-100g kcal instead of per-pack",
+      "fixed_date": "2026-03-22"
+    },
+    {
+      "id": "317755897",
+      "name": "Kitchen Joy Thai Red Chicken Aromatic Coconut Curry with Jasmine Rice 350g",
+      "kcal_was": 137,
+      "kcal_fixed": 474,
+      "note": "scraper grabbed per-100g kcal instead of per-pack",
+      "fixed_date": "2026-03-22"
+    },
+    {
+      "id": "321826535",
+      "name": "Kitchen Joy Thai Cube Vegetable Pad Thai 320g",
+      "kcal_was": 158,
+      "kcal_fixed": 504,
+      "note": "scraper grabbed per-100g kcal instead of per-pack",
+      "fixed_date": "2026-03-22"
+    },
+    {
+      "id": "318170553",
+      "name": "Kitchen Joy Spicy Sesame Chicken Aromatic Chilli with Noodles 320g",
+      "kcal_was": 132,
+      "kcal_fixed": 404,
+      "note": "scraper grabbed per-100g kcal instead of per-pack",
+      "fixed_date": "2026-03-22"
+    },
+    {
+      "id": "321968493",
+      "name": "Kitchen Joy Thai Cube Prawn Wonton Drunken Noodles 300g",
+      "kcal_was": 184,
+      "kcal_fixed": 552,
+      "note": "scraper grabbed per-100g kcal instead of per-pack",
+      "fixed_date": "2026-03-22"
+    },
+    {
+      "id": "320388253",
+      "name": "Kitchen Joy Sweet & Sour Chicken with Jasmine Rice 350g",
+      "kcal_was": 138,
+      "kcal_fixed": 473,
+      "note": "scraper grabbed per-100g kcal instead of per-pack",
+      "fixed_date": "2026-03-22"
+    },
+    {
+      "id": "320394435",
+      "name": "Kitchen Joy Tom Yum Chicken in a Coconut & Lemongrass Sauce with Noodles 320g",
+      "kcal_was": 158,
+      "kcal_fixed": 477,
+      "note": "scraper grabbed per-100g kcal instead of per-pack",
+      "fixed_date": "2026-03-22"
+    },
+    {
+      "id": "321759844",
+      "name": "Kitchen Joy Thai Fried Krapow Chicken 250g",
+      "kcal_was": 202,
+      "kcal_fixed": 252,
+      "note": "scraper grabbed per-100g kcal instead of per-pack",
+      "fixed_date": "2026-03-22"
+    },
+    {
+      "id": "317995379",
+      "name": "Annabel Karmel Mighty Bolognese Mac & Cheese 200g",
+      "kcal_was": 134,
+      "kcal_fixed": 239,
+      "note": "scraper grabbed per-100g kcal instead of per-pack",
+      "fixed_date": "2026-03-22"
+    },
+    {
+      "id": "295686122",
+      "name": "Annabel Karmel Chicken Tikka Masala 200G",
+      "kcal_was": 116,
+      "kcal_fixed": 232,
+      "note": "scraper grabbed per-100g kcal instead of per-pack",
+      "fixed_date": "2026-03-22"
+    },
+    {
+      "id": "294037370",
+      "name": "Annabel Karmel Frozen Chicken Pasta 200G",
+      "kcal_was": 102,
+      "kcal_fixed": 204,
+      "note": "scraper grabbed per-100g kcal instead of per-pack",
+      "fixed_date": "2026-03-22"
+    },
+    {
+      "id": "294037357",
+      "name": "Annabel Karmel Frozen Hidden Vegetable Bolognese 200G",
+      "kcal_was": 98,
+      "kcal_fixed": 196,
+      "note": "scraper grabbed per-100g kcal instead of per-pack",
+      "fixed_date": "2026-03-22"
+    },
+    {
+      "id": "323003503",
+      "name": "Linda McCartney Shredded Hoisin Duck Vegan 260g",
+      "kcal_was": 111,
+      "kcal_fixed": 444,
+      "note": "scraper grabbed per-serving (1/4 pack) kcal instead of per-pack",
+      "fixed_date": "2026-03-22"
+    },
+    {
+      "id": "322756155",
+      "name": "Tesco 2 Basa Fillets With Mediterranean-Style Vegetables & Tomato ragu 360g",
+      "kcal_was": 130,
+      "kcal_fixed": 260,
+      "note": "scraper grabbed per-half-pack kcal instead of per-pack",
+      "fixed_date": "2026-03-22"
+    },
+    {
+      "id": "323497948",
+      "name": "Birds Eye Steamfresh Asian Style Rice 380g",
+      "kcal_was": 173,
+      "kcal_fixed": 346,
+      "note": "scraper grabbed per-bag (half pack) kcal instead of per-pack",
+      "fixed_date": "2026-03-22"
+    }
+  ],
+  "tesco_data_errors": [
+    {
+      "id": "322340272",
+      "name": "The Gym Kitchen Chicken Korma 550g",
+      "description": "Nutrition table columns swapped on Tesco page. Per-100g column shows per-pack values and vice versa. kcal set to null pending Tesco fix.",
+      "report_to_tesco": true,
+      "discovered_date": "2026-03-22"
+    },
+    {
+      "id": "322333776",
+      "name": "Zizzi Tagliatelle Beef Ragu 400g",
+      "description": "Per-pack protein (6.4g) is lower than per-100g protein (7.9g) for a 400g pack — physically impossible. Protein set to null pending Tesco fix.",
+      "report_to_tesco": true,
+      "discovered_date": "2026-03-22"
+    }
+  ],
+  "validation_runs": [
+    {
+      "date": "2026-03-22",
+      "result": "PASS — 147 products, 3 kcal null, 4 protein null, 0 suspicious values",
+      "corrections_applied": 45
+    }
+  ]
+}

@@ -1,0 +1,692 @@
+[
+  {
+    "href": "https://www.ocado.com/products/m-s-singapore-noodles/511281011",
+    "slug": "m-s-singapore-noodles",
+    "id": "511281011",
+    "name": "M&S Singapore Noodles",
+    "price": 5.4,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-chicken-tikka-masala-with-basmati-rice/513965011",
+    "slug": "m-s-chicken-tikka-masala-with-basmati-rice",
+    "id": "513965011",
+    "name": "M&S Chicken Tikka Masala with Basmati Rice",
+    "price": 4.25,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-butter-chicken-curry/514021011",
+    "slug": "m-s-butter-chicken-curry",
+    "id": "514021011",
+    "name": "M&S Butter Chicken Curry",
+    "price": 5.5,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-cantonese-sweet-sour-chicken-with-egg-fried-rice/514027011",
+    "slug": "m-s-cantonese-sweet-sour-chicken-with-egg-fried-rice",
+    "id": "514027011",
+    "name": "M&S Cantonese Sweet & Sour Chicken with Egg Fried Rice",
+    "price": 4.3,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-chicken-chow-mein/514105011",
+    "slug": "m-s-chicken-chow-mein",
+    "id": "514105011",
+    "name": "M&S Chicken Chow Mein",
+    "price": 5.4,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-chicken-tikka-masala/514204011",
+    "slug": "m-s-chicken-tikka-masala",
+    "id": "514204011",
+    "name": "M&S Chicken Tikka Masala",
+    "price": 5.5,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-smoked-ham-cheese-woodfired-stonebaked-pizza/514206011",
+    "slug": "m-s-smoked-ham-cheese-woodfired-stonebaked-pizza",
+    "id": "514206011",
+    "name": "M&S Smoked Ham & Cheese Woodfired & Stonebaked Pizza",
+    "price": 6,
+    "size": "433g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-crispy-katsu-chicken-curry-with-rice-taste-of-asia/514212011",
+    "slug": "m-s-crispy-katsu-chicken-curry-with-rice-taste-of-asia",
+    "id": "514212011",
+    "name": "M&S Crispy Katsu Chicken Curry with Rice - Taste of Asia",
+    "price": 5,
+    "size": "380g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-spaghetti-carbonara-serves-1/514495011",
+    "slug": "m-s-spaghetti-carbonara-serves-1",
+    "id": "514495011",
+    "name": "M&S Spaghetti Carbonara Serves 1",
+    "price": 4,
+    "size": "400g",
+    "dealText": "Buy any 3 for \u00c2\u00a310",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-beef-lasagne-serves-1/514496011",
+    "slug": "m-s-beef-lasagne-serves-1",
+    "id": "514496011",
+    "name": "M&S Beef Lasagne Serves 1",
+    "price": 4,
+    "size": "400g",
+    "dealText": "Buy any 3 for \u00c2\u00a310",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-chicken-bacon-pasta-bake-serves-1/514515011",
+    "slug": "m-s-chicken-bacon-pasta-bake-serves-1",
+    "id": "514515011",
+    "name": "M&S Chicken & Bacon Pasta Bake Serves 1",
+    "price": 4,
+    "size": "400g",
+    "dealText": "Buy any 3 for \u00c2\u00a310",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-chicken-arrabbiata-serves-1/514543011",
+    "slug": "m-s-chicken-arrabbiata-serves-1",
+    "id": "514543011",
+    "name": "M&S Chicken Arrabbiata Serves 1",
+    "price": 4,
+    "size": "400g",
+    "dealText": "Buy any 3 for \u00c2\u00a310",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-sausage-ragu-rigatoni-serves-1/514555011",
+    "slug": "m-s-sausage-ragu-rigatoni-serves-1",
+    "id": "514555011",
+    "name": "M&S Sausage Ragu Rigatoni Serves 1",
+    "price": 4,
+    "size": "400g",
+    "dealText": "Buy any 3 for \u00c2\u00a310",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-spaghetti-bolognese-serves-1/514640011",
+    "slug": "m-s-spaghetti-bolognese-serves-1",
+    "id": "514640011",
+    "name": "M&S Spaghetti Bolognese Serves 1",
+    "price": 4,
+    "size": "400g",
+    "dealText": "Buy any 3 for \u00c2\u00a310",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-mushroom-pappardelle-serves-1/514651011",
+    "slug": "m-s-mushroom-pappardelle-serves-1",
+    "id": "514651011",
+    "name": "M&S Mushroom Pappardelle Serves 1",
+    "price": 4,
+    "size": "400g",
+    "dealText": "Buy any 3 for \u00c2\u00a310",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-macaroni-cheese-serves-1/514829011",
+    "slug": "m-s-macaroni-cheese-serves-1",
+    "id": "514829011",
+    "name": "M&S Macaroni Cheese Serves 1",
+    "price": 4,
+    "size": "400g",
+    "dealText": "Buy any 3 for \u00c2\u00a310",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-ham-mushroom-tagliatelle-serves-1/514884011",
+    "slug": "m-s-ham-mushroom-tagliatelle-serves-1",
+    "id": "514884011",
+    "name": "M&S Ham & Mushroom Tagliatelle Serves 1",
+    "price": 4,
+    "size": "400g",
+    "dealText": "Buy any 3 for \u00c2\u00a310",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-count-on-us-chicken-arrabbiata/515156011",
+    "slug": "m-s-count-on-us-chicken-arrabbiata",
+    "id": "515156011",
+    "name": "M&S Count On Us Chicken Arrabbiata",
+    "price": 4.25,
+    "size": "350g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-count-on-us-naked-chicken-katsu-curry/515271011",
+    "slug": "m-s-count-on-us-naked-chicken-katsu-curry",
+    "id": "515271011",
+    "name": "M&S Count on Us Naked Chicken Katsu Curry",
+    "price": 4.25,
+    "size": "380g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-count-on-us-thai-red-chicken-curry/515636011",
+    "slug": "m-s-count-on-us-thai-red-chicken-curry",
+    "id": "515636011",
+    "name": "M&S Count on Us Thai Red Chicken Curry",
+    "price": 4.25,
+    "size": "380g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-count-on-us-chicken-tikka-masala-rice/515773011",
+    "slug": "m-s-count-on-us-chicken-tikka-masala-rice",
+    "id": "515773011",
+    "name": "M&S Count On Us Chicken Tikka Masala & Rice",
+    "price": 4.25,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-count-on-us-haddock-mornay/515859011",
+    "slug": "m-s-count-on-us-haddock-mornay",
+    "id": "515859011",
+    "name": "M&S Count On Us Haddock Mornay",
+    "price": 4.75,
+    "size": "380g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-taste-buds-cheese-tomato-pasta/515863011",
+    "slug": "m-s-taste-buds-cheese-tomato-pasta",
+    "id": "515863011",
+    "name": "M&S Taste Buds Cheese & Tomato Pasta",
+    "price": 3.5,
+    "size": "225g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-count-on-us-chicken-jalfrezi-with-rice/515875011",
+    "slug": "m-s-count-on-us-chicken-jalfrezi-with-rice",
+    "id": "515875011",
+    "name": "M&S Count On Us Chicken Jalfrezi with Rice",
+    "price": 4.25,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-chilli-con-carne-with-rice/516296011",
+    "slug": "m-s-chilli-con-carne-with-rice",
+    "id": "516296011",
+    "name": "M&S Chilli Con Carne with Rice",
+    "price": 4.25,
+    "size": "450g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-fruity-chicken-curry-with-rice-mini-meal/516500011",
+    "slug": "m-s-fruity-chicken-curry-with-rice-mini-meal",
+    "id": "516500011",
+    "name": "M&S Fruity Chicken Curry with Rice Mini Meal",
+    "price": 2.75,
+    "size": "200g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-minced-lamb-hotpot-mini-meal/516549011",
+    "slug": "m-s-minced-lamb-hotpot-mini-meal",
+    "id": "516549011",
+    "name": "M&S Minced Lamb Hotpot Mini Meal",
+    "price": 2.75,
+    "size": "200g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-beef-cumberland-pie/516551011",
+    "slug": "m-s-beef-cumberland-pie",
+    "id": "516551011",
+    "name": "M&S Beef Cumberland Pie",
+    "price": 4,
+    "size": "400g",
+    "dealText": "",
+    "inStock": false
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-lamb-hot-pot-for-one/516556011",
+    "slug": "m-s-lamb-hot-pot-for-one",
+    "id": "516556011",
+    "name": "M&S Lamb Hot Pot for One",
+    "price": 5.5,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-gastropub-chicken-kyiv-for-one/516558011",
+    "slug": "m-s-gastropub-chicken-kyiv-for-one",
+    "id": "516558011",
+    "name": "M&S Gastropub Chicken Kyiv for One",
+    "price": 6.5,
+    "size": "225g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-roast-beef-dinner-mini-meal/516611011",
+    "slug": "m-s-roast-beef-dinner-mini-meal",
+    "id": "516611011",
+    "name": "M&S Roast Beef Dinner Mini Meal",
+    "price": 3.5,
+    "size": "250g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-shepherd-s-pie/516618011",
+    "slug": "m-s-shepherd-s-pie",
+    "id": "516618011",
+    "name": "M&S Shepherd's Pie",
+    "price": 4,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-beef-hotpot-mini-meal/516668011",
+    "slug": "m-s-beef-hotpot-mini-meal",
+    "id": "516668011",
+    "name": "M&S Beef Hotpot Mini Meal",
+    "price": 2.75,
+    "size": "200g",
+    "dealText": "",
+    "inStock": false
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-cottage-pie/516671011",
+    "slug": "m-s-cottage-pie",
+    "id": "516671011",
+    "name": "M&S Cottage Pie",
+    "price": 4,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-roast-chicken-dinner-mini-meal/516686011",
+    "slug": "m-s-roast-chicken-dinner-mini-meal",
+    "id": "516686011",
+    "name": "M&S Roast Chicken Dinner Mini Meal",
+    "price": 3.5,
+    "size": "270g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-chicken-provencale/516749011",
+    "slug": "m-s-chicken-provencale",
+    "id": "516749011",
+    "name": "M&S Chicken Provencale",
+    "price": 6,
+    "size": "345g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-gastropub-cottage-pie-for-one/516755011",
+    "slug": "m-s-gastropub-cottage-pie-for-one",
+    "id": "516755011",
+    "name": "M&S Gastropub Cottage Pie for One",
+    "price": 6.5,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-gastropub-shepherd-s-pie-for-one/516783011",
+    "slug": "m-s-gastropub-shepherd-s-pie-for-one",
+    "id": "516783011",
+    "name": "M&S Gastropub Shepherd's Pie for One",
+    "price": 6.5,
+    "size": "415g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-chicken-dumpling-casserole-mini-meal/516818011",
+    "slug": "m-s-chicken-dumpling-casserole-mini-meal",
+    "id": "516818011",
+    "name": "M&S Chicken & Dumpling Casserole Mini Meal",
+    "price": 2.75,
+    "size": "200g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-fruity-chicken-curry-with-rice/516884011",
+    "slug": "m-s-fruity-chicken-curry-with-rice",
+    "id": "516884011",
+    "name": "M&S Fruity Chicken Curry with Rice",
+    "price": 4.25,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-roast-chicken-dinner/516897011",
+    "slug": "m-s-roast-chicken-dinner",
+    "id": "516897011",
+    "name": "M&S Roast Chicken Dinner",
+    "price": 5,
+    "size": "420g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-three-cheese-ravioli-serves-1/518722011",
+    "slug": "m-s-three-cheese-ravioli-serves-1",
+    "id": "518722011",
+    "name": "M&S Three Cheese Ravioli Serves 1",
+    "price": 4,
+    "size": "400g",
+    "dealText": "Buy any 3 for \u00c2\u00a310",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-chicken-tagliatelle-serves-1/518979011",
+    "slug": "m-s-chicken-tagliatelle-serves-1",
+    "id": "518979011",
+    "name": "M&S Chicken Tagliatelle Serves 1",
+    "price": 4,
+    "size": "400g",
+    "dealText": "Buy any 3 for \u00c2\u00a310",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-tomato-basil-spaghetti-serves-1/518982011",
+    "slug": "m-s-tomato-basil-spaghetti-serves-1",
+    "id": "518982011",
+    "name": "M&S Tomato & Basil Spaghetti Serves 1",
+    "price": 4,
+    "size": "400g",
+    "dealText": "Buy any 3 for \u00c2\u00a310",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-chicken-alfredo/518988011",
+    "slug": "m-s-chicken-alfredo",
+    "id": "518988011",
+    "name": "M&S Chicken Alfredo",
+    "price": 4,
+    "size": "400g",
+    "dealText": "Buy any 3 for \u00c2\u00a310",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-classic-margherita-woodfired-stonebaked-pizza/543720011",
+    "slug": "m-s-classic-margherita-woodfired-stonebaked-pizza",
+    "id": "543720011",
+    "name": "M&S Classic Margherita Woodfired & Stonebaked Pizza",
+    "price": 6,
+    "size": "428g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-butter-chicken-with-basmati-rice/543982011",
+    "slug": "m-s-butter-chicken-with-basmati-rice",
+    "id": "543982011",
+    "name": "M&S Butter Chicken with Basmati Rice",
+    "price": 4.25,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-count-on-us-sweet-sour-chicken/545661011",
+    "slug": "m-s-count-on-us-sweet-sour-chicken",
+    "id": "545661011",
+    "name": "M&S Count On Us Sweet & Sour Chicken",
+    "price": 4.25,
+    "size": "350g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-tuna-pasta-bake/562372011",
+    "slug": "m-s-tuna-pasta-bake",
+    "id": "562372011",
+    "name": "M&S Tuna Pasta Bake",
+    "price": 4,
+    "size": "400g",
+    "dealText": "Buy any 3 for \u00c2\u00a310",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-the-american-pepperoni-woodfired-stonebaked-pizza/562538011",
+    "slug": "m-s-the-american-pepperoni-woodfired-stonebaked-pizza",
+    "id": "562538011",
+    "name": "M&S The American Pepperoni Woodfired & Stonebaked Pizza",
+    "price": 3.75,
+    "size": "255g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-pepperoni-stonebaked-pizza/572265011",
+    "slug": "m-s-pepperoni-stonebaked-pizza",
+    "id": "572265011",
+    "name": "M&S Pepperoni Stonebaked Pizza",
+    "price": 2.9,
+    "size": "250g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-tomato-mozzarella-pasta-bake-serves-1/609129011",
+    "slug": "m-s-tomato-mozzarella-pasta-bake-serves-1",
+    "id": "609129011",
+    "name": "M&S Tomato & Mozzarella Pasta Bake Serves 1",
+    "price": 4,
+    "size": "400g",
+    "dealText": "Buy any 3 for \u00c2\u00a310",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-gastropub-lamb-moussaka-for-one/622292011",
+    "slug": "m-s-gastropub-lamb-moussaka-for-one",
+    "id": "622292011",
+    "name": "M&S Gastropub Lamb Moussaka for One",
+    "price": 6.5,
+    "size": "410g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-high-protein-pasta-meatballs-box/624281011",
+    "slug": "m-s-high-protein-pasta-meatballs-box",
+    "id": "624281011",
+    "name": "M&S High Protein Pasta & Meatballs Box",
+    "price": 6,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-our-best-ever-chicken-tikka-masala-rice/645781011",
+    "slug": "m-s-our-best-ever-chicken-tikka-masala-rice",
+    "id": "645781011",
+    "name": "M&S Our Best Ever Chicken Tikka Masala & Rice",
+    "price": 5.5,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-king-prawn-chettinad-curry-with-basmati-rice/645793011",
+    "slug": "m-s-king-prawn-chettinad-curry-with-basmati-rice",
+    "id": "645793011",
+    "name": "M&S King Prawn Chettinad Curry with Basmati Rice",
+    "price": 4.3,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-high-protein-cod-scallop-prawn-linguine/649105011",
+    "slug": "m-s-high-protein-cod-scallop-prawn-linguine",
+    "id": "649105011",
+    "name": "M&S High Protein Cod, Scallop & Prawn Linguine",
+    "price": 6,
+    "size": "390g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-high-protein-buffalo-chicken/649111011",
+    "slug": "m-s-high-protein-buffalo-chicken",
+    "id": "649111011",
+    "name": "M&S High Protein Buffalo Chicken",
+    "price": 6,
+    "size": "370g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-count-on-us-piri-piri-chicken/649122011",
+    "slug": "m-s-count-on-us-piri-piri-chicken",
+    "id": "649122011",
+    "name": "M&S Count On Us Piri Piri Chicken",
+    "price": 4.5,
+    "size": "350g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-high-protein-chicken-mushroom-courgetti/649128011",
+    "slug": "m-s-high-protein-chicken-mushroom-courgetti",
+    "id": "649128011",
+    "name": "M&S High Protein Chicken & Mushroom Courgetti",
+    "price": 6,
+    "size": "370g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-macaroni-cheese-with-crispy-bacon-serves-1/671231011",
+    "slug": "m-s-macaroni-cheese-with-crispy-bacon-serves-1",
+    "id": "671231011",
+    "name": "M&S Macaroni Cheese With Crispy Bacon Serves 1",
+    "price": 4,
+    "size": "400g",
+    "dealText": "Buy any 3 for \u00c2\u00a310",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-chicken-tomato-mozzarella-orzotto-serves-1/671246011",
+    "slug": "m-s-chicken-tomato-mozzarella-orzotto-serves-1",
+    "id": "671246011",
+    "name": "M&S Chicken Tomato & Mozzarella Orzotto Serves 1",
+    "price": 4,
+    "size": "400g",
+    "dealText": "Buy any 3 for \u00c2\u00a310",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-spicy-meat-feast-pasta-serves-1/671248011",
+    "slug": "m-s-spicy-meat-feast-pasta-serves-1",
+    "id": "671248011",
+    "name": "M&S Spicy Meat Feast Pasta Serves 1",
+    "price": 4,
+    "size": "400g",
+    "dealText": "Buy any 3 for \u00c2\u00a310",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-nutrient-dense-tandoori-chicken/679130011",
+    "slug": "m-s-nutrient-dense-tandoori-chicken",
+    "id": "679130011",
+    "name": "M&S Nutrient Dense Tandoori Chicken",
+    "price": 7,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-high-protein-chicken-arrabbiata/679132011",
+    "slug": "m-s-high-protein-chicken-arrabbiata",
+    "id": "679132011",
+    "name": "M&S High Protein Chicken Arrabbiata",
+    "price": 6,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-high-protein-chicken-tagine/679134011",
+    "slug": "m-s-high-protein-chicken-tagine",
+    "id": "679134011",
+    "name": "M&S High Protein Chicken Tagine",
+    "price": 6,
+    "size": "390g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-nutrient-dense-romesco-chicken/679136011",
+    "slug": "m-s-nutrient-dense-romesco-chicken",
+    "id": "679136011",
+    "name": "M&S Nutrient Dense Romesco Chicken",
+    "price": 7,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-nutrient-dense-satay-chicken-black-rice-mango/679241011",
+    "slug": "m-s-nutrient-dense-satay-chicken-black-rice-mango",
+    "id": "679241011",
+    "name": "M&S Nutrient Dense Satay Chicken, Black Rice & Mango",
+    "price": 5.75,
+    "size": "290g",
+    "dealText": "",
+    "inStock": true
+  },
+  {
+    "href": "https://www.ocado.com/products/m-s-spaghetti-puttanesca/679803011",
+    "slug": "m-s-spaghetti-puttanesca",
+    "id": "679803011",
+    "name": "M&S Spaghetti Puttanesca",
+    "price": 4,
+    "size": "400g",
+    "dealText": "",
+    "inStock": true
+  }
+]

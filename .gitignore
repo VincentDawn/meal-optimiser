@@ -30,7 +30,5 @@ Thumbs.db
 .claude/
 CLAUDE.md.local
 
-# Local server / scraper outputs we don't want versioned
-scrapers/exclusions.json
-scrapers/prices_combined.json
-scrapers/*_prices.json
+# (scraper outputs and exclusions live in the sibling meal-optimiser-scrapers
+# repo now; nothing in this repo writes to disk at runtime)

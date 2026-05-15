@@ -1,0 +1,15 @@
+{
+  "scraped": "2026-03-22",
+  "source": "parsleybox",
+  "notes": "8 Parsley Box complete chicken meals (with rice or mash). Ambient — no freezer needed, 6-month shelf life. Prices from parsleybox.com. URL format: https://www.parsleybox.com/meals/{slug}",
+  "products": [
+    {"id":"pb_chicken_king","name":"Chicken a la King with Rice","price":4.49,"size":"350g","kcal":375,"protein":17.5,"slug":"chicken-a-la-king-with-rice"},
+    {"id":"pb_sweet_sour","name":"Sweet & Sour Chicken with Rice","price":4.49,"size":"350g","kcal":467,"protein":18.6,"slug":"sweet-and-sour-chicken-with-rice"},
+    {"id":"pb_chasseur","name":"Chicken Chasseur with Rice","price":4.49,"size":"350g","kcal":392,"protein":27.1,"slug":"chicken-chasseur-with-rice"},
+    {"id":"pb_thai_ginger","name":"Thai Style Ginger & Lemon Chicken with Rice","price":4.49,"size":"350g","kcal":454,"protein":22.6,"slug":"thai-style-ginger-and-lemon-chicken-with-rice"},
+    {"id":"pb_korma","name":"Chicken Korma with Rice","price":4.49,"size":"350g","kcal":697,"protein":24.3,"slug":"chicken-korma-with-rice"},
+    {"id":"pb_tikka","name":"Chicken Tikka Masala with Rice","price":4.49,"size":"350g","kcal":627,"protein":29.3,"slug":"chicken-tikka-masala-with-rice"},
+    {"id":"pb_coq_au_vin","name":"Coq au Vin with Mashed Potatoes","price":4.49,"size":"375g","kcal":389,"protein":27.6,"slug":"coq-au-vin-with-mashed-potatoes"},
+    {"id":"pb_spanish","name":"Spanish Style Chicken with Rice","price":4.49,"size":"350g","kcal":357,"protein":19.6,"slug":"spanish-style-chicken-with-rice"}
+  ]
+}

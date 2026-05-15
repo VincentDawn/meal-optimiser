@@ -190,7 +190,7 @@ const MEAL_DATASET = {
       dataQuality: 'verified',
       baseline: false,
       dominated: false,
-      notes: 'Frozen range. Avg across all 147 products: £2.59/meal, 404 kcal, 20g protein. Price range: £0.99–£5.00. No Clubcard deals found on frozen range. Full product list in scrapers/tesco_all_products.json — remove unwanted items and recalculate averages. Also available chilled: "Any 2 for £6" Clubcard = £3.00/meal. Recurring online order ~5 min/week. Live-scraped Mar 2026.',
+      notes: 'Frozen range. Avg across ~150 products: ~£2.50/meal, ~460 kcal, ~22g protein. Price range: £0.99–£5.00. No Clubcard deals found on frozen range. Live averages above are recomputed from data/tesco_all_products.json each page load — open the Tesco filter page to exclude items you would never eat. Also available chilled: "Any 2 for £6" Clubcard = £3.00/meal.',
     },
 
     {

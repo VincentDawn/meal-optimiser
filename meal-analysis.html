@@ -821,19 +821,19 @@ function resetPerStoreOverrides() {
 // 3-for-£10 deal price, Parsley Box has only one price).
 const SCRAPED_SUPPLIERS = {
   rm_tesco: {
-    productsUrl: 'scrapers/tesco_all_products.json',
+    productsUrl: 'data/tesco_all_products.json',
     productsKey: 'frozen',
     lsKey: 'excl_tesco',
     priceFn: p => p.ccPrice ?? p.price,
   },
   rm_ms: {
-    productsUrl: 'scrapers/ms_all_products.json',
+    productsUrl: 'data/ms_all_products.json',
     productsKey: null,                 // bare list at JSON root
     lsKey: 'excl_ms',
     priceFn: p => p.dealPrice ?? p.ccPrice ?? p.price,
   },
   svc_parsley_box: {
-    productsUrl: 'scrapers/parsleybox_all_products.json',
+    productsUrl: 'data/parsleybox_all_products.json',
     productsKey: 'products',
     lsKey: 'excl_parsleybox',
     priceFn: p => p.price,
