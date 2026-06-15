@@ -1,9 +1,25 @@
 {
-  "_doc": "Per-supplier scrape timestamps. Maintained by the bumblebee weekly orchestrator (meal-optimiser-scrapers/scripts/weekly-refresh.sh). Format: ISO-8601 UTC.",
+  "_doc": "Per-supplier scrape timestamps. Maintained by meal-optimiser-scrapers/scripts/weekly-refresh.sh.",
   "suppliers": {
-    "tesco":      { "scraped_at": "2026-03-22T00:00:00Z", "source": "tesco_all_products.json",      "label": "Tesco Frozen" },
-    "ms":         { "scraped_at": "2026-03-22T00:00:00Z", "source": "ms_all_products.json",         "label": "M&S (Ocado)"  },
-    "iceland":    { "scraped_at": "2026-03-22T00:00:00Z", "source": "iceland_all_products.json",    "label": "Iceland"      },
-    "parsleybox": { "scraped_at": "2026-03-22T00:00:00Z", "source": "parsleybox_all_products.json", "label": "Parsley Box"  }
+    "tesco": {
+      "scraped_at": "2026-06-15T05:00:18Z",
+      "source": "tesco_all_products.json",
+      "label": "Tesco Frozen"
+    },
+    "ms": {
+      "scraped_at": "2026-06-15T05:00:18Z",
+      "source": "ms_all_products.json",
+      "label": "M&S (Ocado)"
+    },
+    "iceland": {
+      "scraped_at": "2026-06-15T05:00:18Z",
+      "source": "iceland_all_products.json",
+      "label": "Iceland"
+    },
+    "parsleybox": {
+      "scraped_at": "2026-06-15T05:00:18Z",
+      "source": "parsleybox_all_products.json",
+      "label": "Parsley Box"
+    }
   }
 }
