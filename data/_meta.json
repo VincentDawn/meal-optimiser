@@ -2,22 +2,22 @@
   "_doc": "Per-supplier scrape timestamps. Maintained by meal-optimiser-scrapers/scripts/weekly-refresh.sh.",
   "suppliers": {
     "tesco": {
-      "scraped_at": "2026-08-24T05:00:20Z",
+      "scraped_at": "2026-08-31T05:00:28Z",
       "source": "tesco_all_products.json",
       "label": "Tesco Frozen"
     },
     "ms": {
-      "scraped_at": "2026-08-24T05:00:20Z",
+      "scraped_at": "2026-08-31T05:00:28Z",
       "source": "ms_all_products.json",
       "label": "M&S (Ocado)"
     },
     "iceland": {
-      "scraped_at": "2026-08-24T05:00:20Z",
+      "scraped_at": "2026-08-31T05:00:28Z",
       "source": "iceland_all_products.json",
       "label": "Iceland"
     },
     "parsleybox": {
-      "scraped_at": "2026-08-24T05:00:20Z",
+      "scraped_at": "2026-08-31T05:00:28Z",
       "source": "parsleybox_all_products.json",
       "label": "Parsley Box"
     }
